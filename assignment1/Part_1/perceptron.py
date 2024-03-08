@@ -3,7 +3,7 @@ import numpy as np
 
 class Perceptron(object):
 
-    def __init__(self, n_inputs, max_epochs=None, learning_rate=None):
+    def __init__(self, n_inputs, max_epochs=50, learning_rate=0.1):
         """
         Initializes the perceptron object.
         - n_inputs: Number of inputs.
@@ -11,10 +11,10 @@ class Perceptron(object):
         - learning_rate: Magnitude of weight changes at each training cycle.
         - weights: Initialize weights (including bias).
         """
-        self.n_inputs = None                # Fill in: Initialize number of inputs
-        self.max_epochs = max_epochs        # Fill in: Initialize maximum number of epochs
+        self.n_inputs = n_inputs  # Fill in: Initialize number of inputs
+        self.max_epochs = max_epochs  # Fill in: Initialize maximum number of epochs
         self.learning_rate = learning_rate  # Fill in: Initialize learning rate
-        self.weights = None                 # Fill in: Initialize weights with zeros
+        self.weights = None  # Fill in: Initialize weights with zeros
 
     def forward(self, input_vec):
         """
@@ -46,3 +46,13 @@ class Perceptron(object):
             """
             pass
         pass
+
+
+def main():
+    def __init__(self):
+        perceptron = Perceptron(n_inputs=0)
+        pass
+
+
+if __name__ == "__main__":
+    main()
