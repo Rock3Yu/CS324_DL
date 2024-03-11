@@ -1,13 +1,14 @@
 import argparse
+import time
+
 import numpy as np
 from sklearn import datasets
 
 from mlp_numpy import MLP
-from modules import CrossEntropy
 
 # Default constants
-DNN_HIDDEN_UNITS_DEFAULT = '20'
-# DNN_HIDDEN_UNITS_DEFAULT = '16,32,16'
+# DNN_HIDDEN_UNITS_DEFAULT = '20'
+DNN_HIDDEN_UNITS_DEFAULT = '16,32,16'
 LEARNING_RATE_DEFAULT = 1e-2
 MAX_EPOCHS_DEFAULT = 1500  # adjust if you use batch or not
 EVAL_FREQ_DEFAULT = 10
@@ -51,7 +52,7 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
 
     # done: Initialize your MLP model and loss function (CrossEntropy) here
     hidden_layers = [int(i) for i in dnn_hidden_units.split(",")]
-    mlp = MLP(n_inputs=2, n_hidden=hidden_layers, n_classes=2, learning_rate=learning_rate)
+    mlp = MLP(2, hidden_layers, 2, learning_rate)
     loss_fc = mlp.loss_fc
 
     # others

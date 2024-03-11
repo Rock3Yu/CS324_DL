@@ -41,7 +41,7 @@ class Linear(object):
         """
         dx = np.dot(dout, self.params['weight'].T)
         self.grads['weight'] = np.dot(self.x.T, dout)  # dw
-        self.grads['bias'] = np.sum(dout, axis=0)  # db
+        self.grads['bias'] = np.average(dout, axis=0)  # db
         self.update()
         return dx
 
@@ -76,9 +76,9 @@ class ReLU(object):
         Args:
             dout: Upstream derivative
         """
-        dx = dout * (self.x > 0)
-        return dx
-        # return np.where(self.x > 0, dout, 0)
+        # dx = dout * (self.x > 0)
+        # return dx
+        return np.where(self.x > 0, dout, 0)
 
     def __call__(self, x, predict=False):
         return self.forward(x, predict)
@@ -128,8 +128,8 @@ class CrossEntropy(object):
         Computes the gradient of CrossEntropy loss with respect to the input.
         Hint: For softmax output followed by cross-entropy loss, the gradient simplifies to: p - y.
         """
-        # return x - y
-        return (x - y) / len(x)
+        return x - y
+        # return (x - y) / len(x)
 
     def __call__(self, x, y):
         return self.forward(x, y)
