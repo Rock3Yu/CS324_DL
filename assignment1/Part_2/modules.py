@@ -78,13 +78,14 @@ class ReLU(object):
         """
         dx = dout * (self.x > 0)
         return dx
+        # return np.where(self.x > 0, dout, 0)
 
     def __call__(self, x, predict=False):
         return self.forward(x, predict)
 
 
 class SoftMax(object):
-    def forward(self, x, predict=False):
+    def forward(self, x:np.ndarray, predict=False):
         """
         Applies the softmax function to the input to obtain output probabilities.
         Formula: softmax(x_i) = exp(x_i) / sum(exp(x_j)) for all j
@@ -92,7 +93,12 @@ class SoftMax(object):
             x: input data
             predict: just for holding position, useless
         """
-        return np.exp(x) / np.sum(np.exp(x), axis=0)
+        out = np.zeros_like(x)
+        for idx in range(x.shape[0]):
+            xi = x[idx]
+            yi = np.exp(xi) / np.sum(np.exp(xi))
+            out[idx] = yi
+        return out
 
     def backward(self, dout):
         """
@@ -115,7 +121,6 @@ class CrossEntropy(object):
             x: input data
             y: true labels
         """
-
         return -np.sum(y * np.log(x))
 
     def backward(self, x, y):

@@ -62,5 +62,5 @@ class MLP(object):
         for layer in reversed(self.layers):
             dout = layer.backward(dout)
 
-    def __call__(self, x: np.ndarray) -> np.ndarray:
-        return self.forward(x)
+    def __call__(self, x: np.ndarray, predict=False) -> np.ndarray:
+        return self.forward(x, predict)

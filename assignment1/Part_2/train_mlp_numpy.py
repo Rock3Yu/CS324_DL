@@ -24,7 +24,7 @@ def accuracy(predictions, targets):
     """
     # done: Implement the accuracy calculation
     # Hint: Use np.argmax to find predicted classes, and compare with the true classes in targets
-    return (np.sum(predictions == targets)) / len(predictions)
+    return (np.sum(predictions == targets)) / len(predictions) * 100
 
 
 def plots():
@@ -61,7 +61,7 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
     for step in range(max_steps):
         # done: The training loop
         # 1 Forward pass
-        pred_one_hot = mlp.forward(dataset_train)
+        pred_one_hot = mlp(dataset_train)
         pred = np.argmax(pred_one_hot, axis=1) + 1
         # 2 Compute loss
         # loss_train.append(loss_fc.forward(pred, labels_train))
@@ -74,7 +74,7 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
             # done: Evaluate the model on the test set
             # 1. Forward pass on the test set
             # 2. Compute loss and accuracy
-            pred = mlp.forward(dataset_test, True)
+            pred = mlp(dataset_test, True)
             pred = np.argmax(pred, axis=1)
             # loss_test.append(loss_fc.forward(pred, labels_test))
             acc_test.append(accuracy(pred, labels_test))
