@@ -5,7 +5,7 @@ from modules import Linear, ReLU, SoftMax, CrossEntropy
 
 
 class MLP(object):
-    def __init__(self, n_inputs: int, n_hidden: List[int], n_classes: int):
+    def __init__(self, n_inputs: int, n_hidden: List[int], n_classes: int, learning_rate=1e-2):
         """
         Initializes the multi-layer perceptron object.
 
@@ -17,19 +17,18 @@ class MLP(object):
             n_inputs: Number of inputs (i.e., dimension of an input vector).
             n_hidden: List of integers, where each integer is the number of units in each hidden layer.
             n_classes: Number of classes of the classification problem (i.e., output dimension of the network).
+            learning_rate: learning rate
         """
-        # Hint: You can use a loop to create the necessary number of layers and add them to a list.
-        # Remember to initialize the weights and biases in each layer.
-        input_layer = [Linear(n_inputs, n_hidden[0]), ReLU()]
+        input_layer = [Linear(n_inputs, n_hidden[0], learning_rate), ReLU()]
         hidden_layers = []
-        output_layer = [Linear(n_hidden[-1], n_classes), SoftMax()]
+        output_layer = [Linear(n_hidden[-1], n_classes, learning_rate), SoftMax()]
         for i in range(len(n_hidden) - 1):
-            hidden_layers += [Linear(n_hidden[i], n_hidden[i + 1]), ReLU()]
+            hidden_layers += [Linear(n_hidden[i], n_hidden[i + 1], learning_rate), ReLU()]
 
         self.layers = input_layer + hidden_layers + output_layer
         self.loss_fc = CrossEntropy()
 
-    def forward(self, x: np.ndarray) -> np.ndarray:
+    def forward(self, x: np.ndarray, predict=False) -> np.ndarray:
         """
         Predicts the network output from the input by passing it through several layers.
         
@@ -39,12 +38,13 @@ class MLP(object):
         
         Args:
             x: Input to the network.
+            predict: just predict or forward (may update params)
         Returns:
             numpy.ndarray: Output of the network.
         """
         out = x
         for layer in self.layers:
-            out = layer(out)  # __call__() will invoke def forward()
+            out = layer(out, predict=predict)  # __call__() will invoke def forward()
         return out
 
     def backward(self, dout: np.ndarray) -> None:

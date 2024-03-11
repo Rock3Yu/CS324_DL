@@ -21,13 +21,15 @@ class Linear(object):
         self.grads = {'weight': np.random.randn(in_features, out_features) * 1e-2,
                       'bias': np.zeros((out_features,))}
 
-    def forward(self, x):
+    def forward(self, x, predict=False):
         """
         Performs the forward pass using the formula: output = xW + b
         Args:
             x: input data
+            predict: just predict or forward (may update params)
         """
-        self.x = x
+        if not predict:
+            self.x = x
         return np.dot(x, self.params['weight']) + self.params['bias']
 
     def backward(self, dout):
@@ -46,22 +48,24 @@ class Linear(object):
         self.params['weight'] -= self.lr * self.grads['weight']
         self.params['bias'] -= self.lr * self.grads['bias']
 
-    def __call__(self, x):
-        return self.forward(x)
+    def __call__(self, x, predict=False):
+        return self.forward(x, predict)
 
 
 class ReLU(object):
     def __init__(self):
         self.x = None
 
-    def forward(self, x):
+    def forward(self, x, predict=False):
         """
         Applies the ReLU activation function element-wise to the input.
         Formula: output = max(0, x)
         Args:
             x: input data
+            predict: just predict or forward (may update params)
         """
-        self.x = x
+        if not predict:
+            self.x = x
         return np.maximum(0, x)
 
     def backward(self, dout):
@@ -74,23 +78,19 @@ class ReLU(object):
         dx = dout * (self.x > 0)
         return dx
 
-    def __call__(self, x):
-        return self.forward(x)
+    def __call__(self, x, predict=False):
+        return self.forward(x, predict)
 
 
 class SoftMax(object):
-
-    def __init__(self):
-        self.x = None
-
-    def forward(self, x):
+    def forward(self, x, predict=False):
         """
         Applies the softmax function to the input to obtain output probabilities.
         Formula: softmax(x_i) = exp(x_i) / sum(exp(x_j)) for all j
         Args:
             x: input data
+            predict: just for holding position, useless
         """
-        self.x = x
         return np.exp(x) / np.sum(np.exp(x), axis=0)
 
     def backward(self, dout):
@@ -101,8 +101,8 @@ class SoftMax(object):
         """
         return dout
 
-    def __call__(self, x):
-        return self.forward(x)
+    def __call__(self, x, predict=False):
+        return self.forward(x, predict)
 
 
 class CrossEntropy(object):
