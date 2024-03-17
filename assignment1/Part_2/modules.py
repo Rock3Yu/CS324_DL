@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 
 
@@ -16,10 +18,16 @@ class Linear(object):
         self.in_features = in_features
         self.out_features = out_features
         self.lr = learning_rate
-        self.params = {'weight': np.random.randn(in_features, out_features) * 1e-2,
-                       'bias': np.zeros((out_features,))}
-        self.grads = {'weight': np.random.randn(in_features, out_features) * 1e-2,
-                      'bias': np.zeros((out_features,))}
+        self.params = {
+            'weight': np.random.randn(in_features, out_features) * 1e-2,
+            'bias': np.random.randn(out_features) * 1e-2
+            # 'weight': np.zeros((in_features, out_features)),
+            # 'bias': np.zeros(out_features)
+        }
+        self.grads = {
+            'weight': np.zeros((in_features, out_features)),
+            'bias': np.zeros((out_features,))
+        }
 
     def forward(self, x, predict=False):
         """
@@ -37,17 +45,16 @@ class Linear(object):
         Backward propagation to calculate gradients of loss w.r.t. weights and inputs.
         Args:
             dout: Upstream derivative
-        done: Implement the backward pass.
         """
-        dx = np.dot(dout, self.params['weight'].T)
         self.grads['weight'] = np.dot(self.x.T, dout)  # dw
-        self.grads['bias'] = np.average(dout, axis=0)  # db
+        self.grads['bias'] = np.sum(dout, axis=0)  # db
+        dx = np.dot(dout, self.params['weight'].T)
         self.update()
         return dx
 
     def update(self):
-        self.params['weight'] -= self.lr * self.grads['weight']
-        self.params['bias'] -= self.lr * self.grads['bias']
+        self.params['weight'] += self.lr * self.grads['weight'] / len(self.x)
+        self.params['bias'] += self.lr * self.grads['bias'] / len(self.x)
 
     def __call__(self, x, predict=False):
         return self.forward(x, predict)
@@ -76,8 +83,6 @@ class ReLU(object):
         Args:
             dout: Upstream derivative
         """
-        # dx = dout * (self.x > 0)
-        # return dx
         return np.where(self.x > 0, dout, 0)
 
     def __call__(self, x, predict=False):
@@ -85,7 +90,7 @@ class ReLU(object):
 
 
 class SoftMax(object):
-    def forward(self, x:np.ndarray, predict=False):
+    def forward(self, x: np.ndarray, predict=False):
         """
         Applies the softmax function to the input to obtain output probabilities.
         Formula: softmax(x_i) = exp(x_i) / sum(exp(x_j)) for all j
@@ -93,12 +98,8 @@ class SoftMax(object):
             x: input data
             predict: just for holding position, useless
         """
-        out = np.zeros_like(x)
-        for idx in range(x.shape[0]):
-            xi = x[idx]
-            yi = np.exp(xi) / np.sum(np.exp(xi))
-            out[idx] = yi
-        return out
+        exp_x = np.exp(x - np.max(x, axis=-1, keepdims=True))
+        return exp_x / np.sum(exp_x, axis=-1, keepdims=True)
 
     def backward(self, dout):
         """
@@ -113,7 +114,7 @@ class SoftMax(object):
 
 
 class CrossEntropy(object):
-    def forward(self, x, y):
+    def forward(self, x: np.ndarray, y: np.ndarray):
         """
         Computes the CrossEntropy loss between predictions and true labels.
         Formula: L = -sum(y_i * log(p_i)), where p is the softmax probability of the correct class y.
@@ -128,7 +129,7 @@ class CrossEntropy(object):
         Computes the gradient of CrossEntropy loss with respect to the input.
         Hint: For softmax output followed by cross-entropy loss, the gradient simplifies to: p - y.
         """
-        return x - y
+        return (x - y)
         # return (x - y) / len(x)
 
     def __call__(self, x, y):

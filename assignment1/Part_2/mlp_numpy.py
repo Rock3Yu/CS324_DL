@@ -26,7 +26,7 @@ class MLP(object):
             hidden_layers += [Linear(n_hidden[i], n_hidden[i + 1], learning_rate), ReLU()]
 
         self.layers = input_layer + hidden_layers + output_layer
-        self.loss_fc = CrossEntropy()
+        self.loss_fn = CrossEntropy()
 
     def forward(self, x: np.ndarray, predict=False) -> np.ndarray:
         """
