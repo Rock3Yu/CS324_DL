@@ -235,52 +235,36 @@ def counter(predictions, targets):
 def plots(dataset, labels, acc_train, acc_test, loss_train, loss_test):
 def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq: int, draw_plots: bool,
           use_batch: bool, stochastic_size: int):
+def main():
+if __name__ == '__main__':
+    main()
 ```
 
-​	
+​	This is the main entry of whole MLP training and testing process. The python process will begin from `if __name__ == '__main__'` to invoke the function `main()` where seed maybe set to a fix number, and configuration will read to wait further use.  The function `train()` will be invoked by function `main()` after all configs are prepared well.
 
+​	Three utility functions `accuracy()`, `counter()`, and `plots()` 's usage are calculating accuracy, counting the total right number, and drawing some analysis plots (a point map and two line charts) separately.
 
+​	The core of whole is the function `train()`. At the very beginning of it, I import a useful python library `sklearn` to help me construct a point dataset. I used `sklearn.datasets.make_moons()` to generate 1000 points in two equal number parts of points (500 and 500 separately). The dataset is labeled, shuffled, and with a noise of 0.2 which could raise the complexity of logistic regression problem. Then, I used `sklearn.model_selection.train_test_split()` to split the dataset into training and testing two parts in the ratio of 8 : 2. Moreover, I encode the labels into one-hot format. At the last part of preparation period, The process generate a MLP instance with default weight and bias. [TRAINING PROCESS (see below)]. Finally, it will invoke function `plots()` to output the results and plots.
 
-
-
-The first thing to train my MLP would be to generate train and test data. As the assignment requires, I used the python package sklearn.datasets.make_moons to generate this data set. I generated 1000 data, shuffle them, record their respective label, and used 80% as train data and 20% as test data. To use their label and include it in the process of training, I used the trick called the one-hot label to encode labels. After I know what this encoding and decoding process means, I wrote two functions: encode and decode to transform labels. The encoding process would change one integer into a 1-D array with length 2: if this integer is 1, then the one hot label should [1, 0], or it should be [0, 1]. And decode function would transform one array back to an integer: is the first value is larger than 0.5, then the answer should be 1, or should be 0. Then I try to use the given argument parser. I found that this could take into four possible parameters including the maximum number of epoch, the list of neurons in hidden layers, the learning rate, and the evaluation frequency, which is used to compute and record accuracy and plot them at the end. So I finished the accuracy evaluation function and prepare to begin training. In this part, I used batch gradient descent as the optimizer. BGD means that this MLP would only update its weight and bias after one epoch, which means all the data has forward and backward once. The detailed implementation is that, during each epoch, first we forward the data one by one. After each data is forwarded, the gradient of weight and gradients of bias computed should be added to a structure which is designed to save all these gradients of each layer, so after all the data is calculated once, we use the sum of the gradient of weight of every linear module, divide by the batch size (in this case is the length of training data), multiplies with learning rate and update each layer’s weight and bias.
+​	**\[TRAINING PROCESS\]** (batch)
 
 ```python
-def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq: int, draw_plots: bool,
-          use_batch: bool, stochastic_size: int):
-  	# create dataset, then split
-    dataset, labels = datasets.make_moons(n_samples=(500, 500), shuffle=True, noise=0.2, random_state=SEED_DEFAULT)  # make_moons
-    # split dataset
-    labels_train_oh = np.array([[1, 0] if i == 0 else [0, 1] for i in labels_train])  # one_hot (oh here)
-    labels_test_oh = ...
-		# create MLP instance
-    hidden_layers = ...
-    mlp = MLP(2, hidden_layers, 2, learning_rate)
-    loss_fn = mlp.loss_fn
-    # train
-    for step in range(max_steps):
-        if use_batch:  # batch
-            pred_oh = mlp(dataset_train)
-            loss_train.append(loss_fn(pred_oh, labels_train_oh))
-            acc_train.append(accuracy(pred_oh, labels_train_oh))
-            dout = loss_fn.backward(pred_oh, labels_train_oh)
-            mlp.backward(dout)
-            mlp.update()
-        else:  # stochastic
-            if stochastic_size == 1:# similar, omitted
-            else:# similar, omitted
-        if step % eval_freq == 0 or step == max_steps - 1:  # test, omitted
-    if draw_plots:
-        plots(dataset, labels, acc_train, acc_test, loss_train, loss_test)
+   for step in range(max_steps):     
+        pred_oh = mlp(dataset_train)
+        loss_train.append(loss_fn(pred_oh, labels_train_oh))
+        acc_train.append(accuracy(pred_oh, labels_train_oh))
+        dout = loss_fn.backward(pred_oh, labels_train_oh)
+        mlp.backward(dout)
+        mlp.update()
 ```
 
-
+​	As shown in the semantic code above, the training process has mainly four steps [1] predict, [2] loss forward and calculate accuracy, [3] loss backward and MLP backward, [4] update MLP parameters. Remarkably, the input data `dataset_train` is a whole of all training data, so the process may be considered as batch_size = 800 in default settings.
 
 
 
 ### 2.2 Experiments and analysis
 
-**(1) Command Line output sample:**
+**Command Line output sample**
 
 ```cmd
 Step: 0, Loss: 557.5666455613724, Accuracy: 47.5
@@ -291,13 +275,19 @@ Step: 1499, Loss: 266.50884791013317, Accuracy: 87.0
 Training complete!
 ```
 
-**(2) Point map, Line charts, and Analysis**
+**Plots**
 
-| Accuracy Curve            | Loss Curve                                                   |
-| ------------------------- | ------------------------------------------------------------ |
-| ![](./pics/part2_2.png)   | ![](./pics/part2_3.png)                                      |
-| **Points Map (Original)** | **Analysis**                                                 |
-| ![](./pics/part2_1.png)   | 1. The noise is 0.2, so two point set have a relatively big area of overlapping, which let the problem become harder.<br />2. Both the curve of Accuracy and Loss shows **a good convergence** after a short period of learning process.<br />3. Final accuracy rate is 87.0%, **near 90%**<br />4. Final loss is **lower than 400** and **<90% of the initial loss**<br />5. The performance of the model is **acceptable** |
+| Accuracy Curve          | Loss Curve              | Points Map (Original)   |
+| ----------------------- | ----------------------- | ----------------------- |
+| ![](./pics/part2_2.png) | ![](./pics/part2_3.png) | ![](./pics/part2_1.png) |
+
+**Analysis**
+
+1. The noise is 0.2, so two point set have a relatively big area of overlapping, which let the problem become harder.
+2. Both the curve of Accuracy and Loss shows **a good convergence** ✅ after a short period of learning process.
+3. Final accuracy rate is 87.0%, **near 90%**
+4. Final loss is **lower than 400** and **<90% of the initial loss**
+5. The performance of the model is **acceptable**
 
 
 
@@ -310,25 +300,13 @@ Training complete!
 
 ### 2.3 Code review
 
-**(1) Only difference to Part 2 (batch way), in `train_mlp_numpy.py`**
+**`train_mlp_numpy.py`** difference to the batch way (in 2.1)
 
-```python
-        # stochastic
-        else:
-            loss = 0
-            count_right = 0
-            indices = np.random.permutation(len(dataset_train))  # shuffle in the same order
-            xs = dataset_train[indices]
-            ys = labels_train_oh[indices]
-            if stochastic_size == 1:
-                for eg, y in zip(dataset_train, labels_train_oh):
-										# batch size of 1
-            else:
-                for i in range(0, len(dataset_train), stochastic_size):
-                    # batch size of specific integer
-            loss_train.append(loss)
-            acc_train.append(count_right / len(dataset_train) * 100)
-```
+​	**\[TRAINING PROCESS\]** (stochastic)
+
+1. shuffle the input data
+2. batch size from 1 to specific integer (e.g. 20, 50)
+3. update after each batch
 
 
 
@@ -338,8 +316,6 @@ Training complete!
 * Although the gradients of each sample in Stochastic training may have large variance, the average direction of these gradients is usually consistent.
 * The distribution of the training data is the same, so the results are similar.
 * Only when [batch_size = 1], The model is not very stable. However, the result is accecptable
-
-
 
 
 
@@ -377,19 +353,19 @@ I would like to thank Prof.Zhang, Dor.Wang and all TAs for their excellent work.
 
 ​	You can find source figures in `./Part_2/main.ipynb`
 
-(1) Stochastic with batch_size = 1
+**Group 1** Stochastic with batch_size = 1
 
 | Accuracy Curve       | Loss Curve           |
 | -------------------- | -------------------- |
 | ![](./pics/add1.png) | ![](./pics/add2.png) |
 
-(2) Stochastic with batch_size = 20
+**Group 2** Stochastic with batch_size = 20
 
 | Accuracy Curve       | Loss Curve           |
 | -------------------- | -------------------- |
 | ![](./pics/add3.png) | ![](./pics/add4.png) |
 
-(3) Stochastic with batch_size = 50
+**Group 3** Stochastic with batch_size = 50
 
 | Accuracy Curve       | Loss Curve           |
 | -------------------- | -------------------- |
