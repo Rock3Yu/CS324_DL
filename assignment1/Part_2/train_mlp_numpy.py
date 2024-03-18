@@ -2,7 +2,7 @@ import argparse
 import time
 
 import numpy as np
-import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
@@ -30,6 +30,8 @@ def accuracy(predictions, targets):
     """
     # done: Implement the accuracy calculation
     # Hint: Use np.argmax to find predicted classes, and compare with the true classes in targets
+    targets = np.argmax(targets, axis=1)
+    predictions = np.argmax(predictions, axis=1)
     return accuracy_score(targets, predictions) * 100
 
 
@@ -52,8 +54,23 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
     dataset, labels = datasets.make_moons(n_samples=(500, 500), shuffle=True, noise=0.2, random_state=SEED_DEFAULT)
     dataset_train, dataset_test, labels_train, labels_test = (
         train_test_split(dataset, labels, test_size=0.2, random_state=SEED_DEFAULT))
-    labels_train_oh = [[0, 1] if i == 0 else [1, 0] for i in labels[:800]]
-    labels_test_oh = [[0, 1] if i == 0 else [1, 0] for i in labels[800:]]
+    labels_train_oh = np.array([[1, 0] if i == 0 else [0, 1] for i in labels[:800]])
+    labels_test_oh = np.array([[1, 0] if i == 0 else [0, 1] for i in labels[800:]])
+
+    # points plot
+    plot = False
+    if plot:
+        class_0 = dataset[labels == 0]
+        class_1 = dataset[labels == 1]
+        plt.figure(figsize=(8, 6))
+        plt.scatter(class_0[:, 0], class_0[:, 1], c='blue', label='Class 0')
+        plt.scatter(class_1[:, 0], class_1[:, 1], c='red', label='Class 1')
+        plt.title('Generated Data with Labels')
+        plt.xlabel('Feature 1')
+        plt.ylabel('Feature 2')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
 
     # done: Initialize your MLP model and loss function (CrossEntropy) here
     hidden_layers = [int(i) for i in dnn_hidden_units.split(",")]
@@ -67,11 +84,10 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
         # done: The training loop
         # 1 Forward pass
         pred_oh = mlp(dataset_train)
-        pred = np.argmax(pred_oh, axis=1)
 
         # 2 Compute loss
         loss_train.append(loss_fn(pred_oh, labels_train_oh))
-        acc_train.append(accuracy(pred, labels_train))
+        acc_train.append(accuracy(pred_oh, labels_train_oh))
 
         # 3&4 Backward pass (compute gradients); Update weights
         dout = loss_fn.backward(pred_oh, labels_train_oh)
@@ -84,10 +100,9 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
             # done: Evaluate the model on the test set
             # 1. Forward pass on the test set
             # 2. Compute loss and accuracy
-            pred_oh = mlp(dataset_test, True)
-            pred = np.argmax(pred_oh, axis=1)
+            pred_oh = mlp(dataset_test)
             loss_test.append(loss_fn(pred_oh, labels_test_oh))
-            acc_test.append(accuracy(pred, labels_test))
+            acc_test.append(accuracy(pred_oh, labels_test_oh))
             print(f"Step: {step}, Loss: {loss_test[-1]}, Accuracy: {acc_test[-1]}")
 
     print("Training complete!")
@@ -95,6 +110,16 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
     #     plots()
     #     print("Plots complete!")
 
+    # count = 0
+    # for layer in mlp.layers:
+    #     print(count)
+    #     count += 1
+    #     print(type(layer))
+    #     if 'Linear' in str(type(layer)):
+    #         print(layer.params['weight'].shape)
+    #         print(layer.params)
+    #         print(layer.grads)
+    #         print(layer.x)
 
 
 def main():

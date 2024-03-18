@@ -28,7 +28,7 @@ class MLP(object):
         self.layers = input_layer + hidden_layers + output_layer
         self.loss_fn = CrossEntropy()
 
-    def forward(self, x: np.ndarray, predict=False) -> np.ndarray:
+    def forward(self, x: np.ndarray) -> np.ndarray:
         """
         Predicts the network output from the input by passing it through several layers.
         
@@ -44,7 +44,7 @@ class MLP(object):
         """
         out = x
         for layer in self.layers:
-            out = layer(out, predict=predict)  # __call__() will invoke def forward()
+            out = layer(out)  # __call__() will invoke def forward()
         return out
 
     def backward(self, dout: np.ndarray) -> None:
@@ -62,5 +62,5 @@ class MLP(object):
         for layer in reversed(self.layers):
             dout = layer.backward(dout)
 
-    def __call__(self, x: np.ndarray, predict=False) -> np.ndarray:
-        return self.forward(x, predict)
+    def __call__(self, x: np.ndarray) -> np.ndarray:
+        return self.forward(x)

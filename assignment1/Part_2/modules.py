@@ -29,15 +29,13 @@ class Linear(object):
             'bias': np.zeros((out_features,))
         }
 
-    def forward(self, x, predict=False):
+    def forward(self, x):
         """
         Performs the forward pass using the formula: output = xW + b
         Args:
             x: input data
-            predict: just predict or forward (may update params)
         """
-        if not predict:
-            self.x = x
+        self.x = x
         return np.dot(x, self.params['weight']) + self.params['bias']
 
     def backward(self, dout):
@@ -53,27 +51,25 @@ class Linear(object):
         return dx
 
     def update(self):
-        self.params['weight'] += self.lr * self.grads['weight'] / len(self.x)
-        self.params['bias'] += self.lr * self.grads['bias'] / len(self.x)
+        self.params['weight'] -= self.lr * self.grads['weight']
+        self.params['bias'] -= self.lr * self.grads['bias']
 
-    def __call__(self, x, predict=False):
-        return self.forward(x, predict)
+    def __call__(self, x):
+        return self.forward(x)
 
 
 class ReLU(object):
     def __init__(self):
         self.x = None
 
-    def forward(self, x, predict=False):
+    def forward(self, x):
         """
         Applies the ReLU activation function element-wise to the input.
         Formula: output = max(0, x)
         Args:
             x: input data
-            predict: just predict or forward (may update params)
         """
-        if not predict:
-            self.x = x
+        self.x = x
         return np.maximum(0, x)
 
     def backward(self, dout):
@@ -85,18 +81,17 @@ class ReLU(object):
         """
         return np.where(self.x > 0, dout, 0)
 
-    def __call__(self, x, predict=False):
-        return self.forward(x, predict)
+    def __call__(self, x):
+        return self.forward(x)
 
 
 class SoftMax(object):
-    def forward(self, x: np.ndarray, predict=False):
+    def forward(self, x: np.ndarray):
         """
         Applies the softmax function to the input to obtain output probabilities.
         Formula: softmax(x_i) = exp(x_i) / sum(exp(x_j)) for all j
         Args:
             x: input data
-            predict: just for holding position, useless
         """
         exp_x = np.exp(x - np.max(x, axis=-1, keepdims=True))
         return exp_x / np.sum(exp_x, axis=-1, keepdims=True)
@@ -109,8 +104,8 @@ class SoftMax(object):
         """
         return dout
 
-    def __call__(self, x, predict=False):
-        return self.forward(x, predict)
+    def __call__(self, x):
+        return self.forward(x)
 
 
 class CrossEntropy(object):
@@ -129,7 +124,7 @@ class CrossEntropy(object):
         Computes the gradient of CrossEntropy loss with respect to the input.
         Hint: For softmax output followed by cross-entropy loss, the gradient simplifies to: p - y.
         """
-        return (x - y)
+        return x - y
         # return (x - y) / len(x)
 
     def __call__(self, x, y):
