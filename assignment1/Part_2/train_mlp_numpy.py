@@ -30,8 +30,8 @@ def accuracy(predictions, targets):
     """
     # done: Implement the accuracy calculation
     # Hint: Use np.argmax to find predicted classes, and compare with the true classes in targets
-    targets = np.argmax(targets, axis=1)
-    predictions = np.argmax(predictions, axis=1)
+    targets = np.argmax(targets, axis=-1)
+    predictions = np.argmax(predictions, axis=-1)
     return accuracy_score(targets, predictions) * 100
 
 
@@ -51,11 +51,11 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
         draw_plots: Draw analysis plots
     """
     # done: Load your data here, use make_moons to create a dataset of 1000 points
-    dataset, labels = datasets.make_moons(n_samples=(500, 500), shuffle=True, noise=0.2, random_state=SEED_DEFAULT)
+    dataset, labels = datasets.make_moons(n_samples=(400, 600), shuffle=True, noise=0.3, random_state=SEED_DEFAULT)
     dataset_train, dataset_test, labels_train, labels_test = (
         train_test_split(dataset, labels, test_size=0.2, random_state=SEED_DEFAULT))
-    labels_train_oh = np.array([[1, 0] if i == 0 else [0, 1] for i in labels[:800]])
-    labels_test_oh = np.array([[1, 0] if i == 0 else [0, 1] for i in labels[800:]])
+    labels_train_oh = np.array([[1, 0] if i == 0 else [0, 1] for i in labels_train])
+    labels_test_oh = np.array([[1, 0] if i == 0 else [0, 1] for i in labels_test])
 
     # points plot
     plot = False
@@ -82,20 +82,34 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
 
     for step in range(max_steps):
         # done: The training loop
-        # 1 Forward pass
-        pred_oh = mlp(dataset_train)
+        batch = True
+        if batch:
+            # 1 Forward pass
+            pred_oh = mlp(dataset_train)
+            # 2 Compute loss
+            loss_train.append(loss_fn(pred_oh, labels_train_oh))
+            acc_train.append(accuracy(pred_oh, labels_train_oh))
+            # 3&4 Backward pass (compute gradients); Update weights
+            dout = loss_fn.backward(pred_oh, labels_train_oh)
+            mlp.backward(dout)
+            mlp.update()
 
-        # 2 Compute loss
-        loss_train.append(loss_fn(pred_oh, labels_train_oh))
-        acc_train.append(accuracy(pred_oh, labels_train_oh))
-
-        # 3&4 Backward pass (compute gradients); Update weights
-        dout = loss_fn.backward(pred_oh, labels_train_oh)
-        mlp.backward(dout)
-        mlp.update()
+        else:  # stochastic
+            loss = 0
+            count_right = 0
+            for eg, y in zip(dataset_train, labels_train_oh):
+                eg = np.reshape(eg, newshape=(1, 2))
+                pred_oh = mlp(eg)
+                loss += loss_fn(pred_oh, y)
+                count_right += (accuracy(pred_oh, [y]) == 100)
+                dout = loss_fn.backward(pred_oh, y)
+                mlp.backward(dout)
+                mlp.update()
+            loss_train.append(loss)
+            acc_train.append(count_right / len(dataset_train) * 100)
 
         # others
-        # print(f"Step: {step}, Loss: {loss_train[-1]}, Accuracy: {acc_train[-1]}")
+        print(f"Step: {step}, Loss: {loss_train[-1]}, Accuracy: {acc_train[-1]}")
 
         if step % eval_freq == 0 or step == max_steps - 1:
             # done: Evaluate the model on the test set
@@ -139,7 +153,7 @@ def main():
                         help='Frequency of evaluation on the test set')
     flags = parser.parse_known_args()[0]
 
-    np.random.seed(SEED_DEFAULT)
+    # np.random.seed(SEED_DEFAULT)
     train(flags.dnn_hidden_units, flags.learning_rate, flags.max_steps, flags.eval_freq)
 
 
