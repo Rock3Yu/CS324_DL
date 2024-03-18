@@ -10,14 +10,11 @@ Due: 28th of March 2024 at 23:55
 
 ----
 
-
-
 [TOC]
 
 File structure:
 
 ```cmd
-.
 ├── Part_1
 │   └── perceptron.py
 ├── Part_2
@@ -27,9 +24,21 @@ File structure:
 │   ├── readme.md
 │   └── train_mlp_numpy.py
 ├── Report
-│   └── ...  // some others
-└── ...  // some others
+│   └── ...  // others
+└── ...  // others
 ```
+
+
+
+## ➤ Introduction
+
+The purpose of this lab assignment is to introduce the **perceptron**, a fundamental algorithm in supervised learning for binary classification tasks. A binary classifier determines whether an input, typically represented as a vector of numerical features, belongs to a specific class or not.
+
+**In Assignment 1 Part 1**, we were tasked with implementing a perceptron model with only two layers and training it to classify points generated from normal distributions.
+
+**In Assignment 1 Part 2**, the objective was to extend our implementation to a multi-layer perceptron (MLP) capable of handling various parameters. Jupyter notebook was used to present our results.
+
+Having completed all parts of the assignment, I present this report summarizing the outcomes and findings of Assignment 1.
 
 
 
@@ -41,147 +50,61 @@ File structure:
 
 ### 1.1 Code review
 
-**(1) Generate a dataset of points, in Gaussian distributions**
+#### Task 1
 
-​	The points set has two part of points, which have centers of (30, 27) and (10, 7), standard deviations of (1, 10) and (3, 3) for each part (these data is variable).
+**Generate a dataset of points, in Gaussian distributions**
 
-```python
-    dataset = []
-    centers = [[30, 27], [10, 7]]
-    stds = [[1, 10], [3, 3]]
-    for i in range(100):
-        x0 = np.random.normal(centers[0][0], stds[0][0])
-        y0 = np.random.normal(centers[0][1], stds[0][1])
-        x1 = np.random.normal(centers[1][0], stds[1][0])
-        y1 = np.random.normal(centers[1][1], stds[1][1])
-        dataset.append([x0, y0, -1])
-        dataset.append([x1, y1, +1])
-    dataset_train = np.array(dataset[:160])
-    dataset_test = np.array(dataset[160:])
-```
+​	At the very beginning of Task 1, we need to generate a dataset of points. Here, I use two different *Gaussian Distributions (1)* in both x-axis and y-axis for these two point sets distribution. The distributions will have different **mean** and **covariance**, so point sets will have different centers and distribution size.
+$$
+X ∼ N(\mu, \sigma^2)
+$$
+​	During the training process, I adjust the value of mean and covariance to test the perceptron model's performance, stability, and generalization capability. The default values of mean are (30, 27) and (10, 7), covariance are (1, 10) and (3, 3).
 
-**(2) Implement the perceptron**
+​	As for implementation details, I used NumPy library. Firstly, I use `np.random.normal()` to generate Gaussian Distributions. Using acquired 200 points, I append them into a dataset list with their labels `-1` or `1`.  Then I split the dataset into two parts, training and testing, in the ratio of 8 : 2, which has 80 and 20 points for each labels.
 
-​	The core part is the function `train(self, ...)`, which contains train (forward and calculate gradient), test, and output accuracy.
+#### Task 2
 
-```python
-class Perceptron(object):  # not full code
-    def __init__(self, n_inputs, max_epochs=1e3, learning_rate=1e-2):
-        self.weights = np.zeros(n_inputs)
-        self.bias = 0
-    def forward(self, input_vec) -> int:
-        return np.sign(np.dot(input_vec, self.weights) + self.bias)
-    def train(self, training_inputs, labels, test_inputs=None, test_labels=None) -> list:
-        n = len(training_inputs)
-        accuracy = [[], []]
-        for epoch in range(self.max_epochs):
-            # train
-            count = 0
-            grad = np.zeros(self.weights.shape)
-            grad_bias = 0
-            for xi, yi in zip(training_inputs, labels):
-                prediction = self.forward(xi)
-                if prediction != yi:
-                    grad -= xi * yi
-                    grad_bias -= yi
-                    count += 1
-            grad /= n
-            grad_bias /= n
-            self.weights -= self.learning_rate * grad
-            self.bias -= self.learning_rate * grad_bias
-            accuracy[0].append((n - count) / n)
-            # test
-            if test_inputs is not None and test_labels is not None:
-                accuracy[1].append(self.test(test_inputs, test_labels))
-            # output
-            if epoch % 100 == 0:
-                print("epoch", epoch, "- wrong:", count)
-        return accuracy
-    def test(self, test_inputs, test_labels) -> float:
-      	...
-    def get_k_b(self):
-        ...
-```
+**Implement the perceptron**
 
-**(3) Train and Test**
+​	Followed the instructions, I implement the functions of perceptron and train/test process.
 
-```python
-		perceptron = Perceptron(np.shape(dataset_train[0][:-1]))
-    acc = perceptron.train(list(dataset_train[:, :-1]), dataset_train[:, -1:],
-                           list(dataset_train[:, :-1]), dataset_train[:, -1:])
-    acc_train, acc_test = acc[0], acc[1]
-```
+​	The implementations of perceptron could be split into several functions: `__init__()`, `forward()`, `train()`, `test()`, and `get_k_b()`. Firstly, `__init__()` will initialize a perceptron object. The `weights` and `bias` are spited into two part differing from the perceptronslides.pdf suggestion and both are set as zero(s). Secondly, `forward()` function simply calculate $\hat{y} = wX + b$ to output predictions of the model. Two NumPy functions, `np.sign()` and `np.dot()`, are used. Thirdly, `train()` function is the most important function of all. In each epoch, gradients of `weights` and `bias` will be calculate after invoking `forward()`. Then parameters will update in a specific `learning_rate`. The function will also invoke `test()` in each epoch and print accuracy rate in command line windows. Fourthly, `test()` function is designed to count the difference between predictions and true labels. Lastly, `get_k_b()` is a custom functions to benefit drawing plots. The gradients show as below:
+$$
+\bigtriangledown_w L(w, b) = - \sum_{x_i \in M}y_i x_i \\
+\bigtriangledown_b L(w, b) = - \sum_{x_i \in M}y_i
+$$
 
-**(4) Plots. Regular, not show here.**
+#### Task 3
+
+**Train and Test**
+
+​	The implementations of train/test process. Because the dataset is prepared already, I just create an instance of `Perceptron` then invoke the function `train()` with inputs in suitable format. The result of `train()` is two list of accuracy of train and test periods which could be convert to graphical representations (line charts).
+
+#### Task 4
+
+**Plots**
+
+​	Easy-peasy, not show here. Using a python library `matplotlib.pyplot`
 
 
 
-### 1.2 Results and analysis
+### 1.2 Experiments and analysis
 
-**Question**: Experiment with different sets of points (generated as described in Task 1). What happens during the training if the means of the <u>two Gaussians are too close</u> and/or if their <u>variance is too high</u>?
+**Question**
 
-**(1) Normal situation**
+​	Experiment with different sets of points (generated as described in Task 1). What happens during the training if the means of the <u>two Gaussians are too close</u> and/or if their <u>variance is too high</u>?
 
-Settings:
+**Experiments**
 
-```python
-centers = [[30, 27], [10, 7]]
-stds = [[1, 10], [3, 3]]
-```
+|                       | Mean 1   | Covariance 1 | Mean 2   | Covariance 2 | Accuracy                    |
+| --------------------- | -------- | ------------ | -------- | ------------ | --------------------------- |
+| **Regular**           | [30, 27] | [1, 10]      | [10, 7]  | [3, 3]       | 100%                        |
+| **Too close**         | [30, 30] | [1, 1]       | [28, 28] | [1, 1]       | 50%                         |
+| **Variance too high** | [30, 27] | [10, 10]     | [10, 7]  | [15, 15]     | 50% - 75%, can not converge |
 
-Results:
+**Analysis**
 
-| Points Map              | Accuracy Curve          |
-| ----------------------- | ----------------------- |
-| ![](./pics/part1_2.png) | ![](./pics/part1_1.png) |
-
-Analysis:
-
-​	At first, the model fluctuated as a large scale in the perspective of accuracy.
-
-​	At last, the model converged to 100% accuracy, which means the model can handle this problem.
-
-**(2) Two Gaussians are too close**
-
-Settings:
-
-```python
-centers = [[30, 30], [28, 28]]
-stds = [[1, 1], [1, 1]]
-```
-
-Results:
-
-| Points Map              | Accuracy Curve          |
-| ----------------------- | ----------------------- |
-| ![](./pics/part1_4.png) | ![](./pics/part1_3.png) |
-
-Analysis:
-
-​	The model can not converge. ❌
-
-**(3) Variance is too high**
-
-Settings:
-
-```python
-centers = [[30, 27], [10, 7]]
-stds = [[10, 10], [15, 15]]
-```
-
-Results:
-
-| Points Map              | Accuracy Curve          |
-| ----------------------- | ----------------------- |
-| ![](./pics/part1_6.png) | ![](./pics/part1_5.png) |
-
-Analysis:
-
-​	The model can not converge. ❌
-
-**(4) Summary**
-
-​	When two point sets are separately, both human and the linear model (single layer perceptron) can distinguish the diff between the sets. Nonetheless, if the <u>two Gaussians are too close</u> and/or if their <u>variance is too high</u>, it is impossible for all to separate points. As a result, the model could not coverage or reach a good solution.
+​	I did the above experiment with a lot of different sets of different Gaussian distributions. When two point sets are separately, both human and the linear model (single layer perceptron) can distinguish the diff between the sets. Nonetheless, if the <u>two Gaussians are too close</u> and/or if their <u>variance is too high</u>, it is impossible for both to separate points. As a result, the model could not coverage or reach a good solution.
 
 
 
@@ -194,9 +117,15 @@ Analysis:
 
 ### 2.1 Code review
 
-**(1) `module.py` structure (details omitted)**
+​	Differ from Part 1, this part we should implement a multi-layer perceptron (MLP) while preparing dataset and training/testing the performance of the MLP. Three `.py` files included in this Part, located in `./Part_2`, are `modules.py`, `mlp_numpy.py`, and `train_mlp_numpy.py`. Remarkably, `modules.py` is the most underlying one and `train_mlp_numpy.py` is the top one with `main()` entry.
 
-​	All are basic layers of a Multi-layer Perceptron (MLP)
+#### Task 1
+
+**`module.py`**
+
+​	There are 4 basic layers of a Multi-layer Perceptron (MLP), `Linear`, `ReLu`, `SoftMax`, and `CrossEntropy`. All of these layers have function `forward()`, `backward()`, and `__call__()`, which are used to calculate output, gradients, and directly invoke function `forward()` separately. Some of layers have function `__init__()`. The `Linear` layer has a function `update()` to renew the parameters according to the upstream layer's gradient and stored input `x`.
+
+**`module.py`** Linear Layer
 
 ```python
 class Linear(object):
@@ -205,69 +134,116 @@ class Linear(object):
     def backward(self, dout):
     def update(self):
     def __call__(self, x):
+```
 
+​	In the function `__init__()`, I initialize the parameters and gradients of it and both of them contains two parts, `weight` and `bias`. Moreover, the function `forward()`, as the name shows, simply outputs the forward propagation of this linear layer and store the input data using `self.x = x`. The mathematical formula is $\hat{y} = Wx + b$. What is more, the function `backward()` will calculate gradient and save the values until `update()` use it to renew the parameters of this linear layer. The mathematical formulas of `backward()` show as below:
+$$
+\text{Gradient}_w = x^T ∗ dout \\
+\text{Gradient}_b = dout \\
+dx = dout ∗ w^T \\
+$$
+​	Where $dout$ is the upstream gradient and $*$ means matrix multiple (compare to element-wise multiple).
+
+​	Lastly, the function `update()` will follow the formulas below:
+$$
+w = w - \text{learning\_rate} * \text{Gradient}_w \\
+b = b - \text{learning\_rate} * \text{Gradient}_b
+$$
+**`module.py`** ReLu Layer
+
+```python
 class ReLU(object):
     def __init__(self):
     def forward(self, x):
     def backward(self, dout):
     def __call__(self, x):
+```
 
+​	ReLu function is a common-used activate function and could only forward the positive part of its inputs. The function `forward()` contains a line of code `return np.maximum(x, 0)` to realize the requirement. The gradient of the function shows as below:
+$$
+\text{Gradient} = \begin{cases}
+0,& \text{when } x \leq 0\\
+1,& \text{when } x > 0
+\end{cases}
+$$
+​	Considering the upstream gradient `dout`, The backward propagation will be `return np.where(self.x > 0, dout, 0)`
+
+**`module.py`** SoftMax Layer
+
+```python
 class SoftMax(object):
     def forward(self, x: np.ndarray):
     def backward(self, dout):
     def __call__(self, x):
+```
 
+​	SoftMax function is another common-used activate function for the output layer. It could normalize the output of a network to a probability distribution over predicted output classes, based on Luce's choice axiom. The function `forward()` follows the mathematical formula below:
+$$
+\text{SoftMax}(x_i) = \frac{e^{x_i}}{\sum_{j=1}^{N}e^{x_j}}
+$$
+​	My implementation of the function `forward()` is robust because it could handle batch forward propagation. Codes:
+
+```python
+    def forward(self, x: np.ndarray):
+        exp_x = np.exp(x - np.max(x, axis=-1, keepdims=True))
+        return exp_x / np.sum(exp_x, axis=-1, keepdims=True)
+```
+
+​	As for the backward propagation, it is merged with the class `CrossEntropy` to achieve a simpler mathematical formula.
+
+**`module.py`** CrossEntropy Layer
+
+```python
 class CrossEntropy(object):
     def forward(self, x: np.ndarray, y: np.ndarray):
     def backward(self, x, y):
     def __call__(self, x, y):
 ```
 
-**(2) `mlp_numpy.py` full code (import from `module.py`)**
+​	Cross entropy can be used as a loss function in neural networks, where $p$ represents the distribution of true labels and $q$ is the distribution of predictions of a model, and the cross entropy loss function can measure the similarity between $p$ and $q$. In our implementation, the function `forward()` will calculate the loss value of present prediction with true labels by following the formula below:
+$$
+L(x^{(N)}, t) = - \sum_i t_i \log x_i^{(N)}
+$$
+​	Or in code: `return -np.sum(y * np.log(x))`. As for the backward propagation part along with function SoftMax, it simply is the predictions minus true labels, or in code: `return x - y`.
+
+**`mlp_numpy.py`**
+
+```python
+class MLP(object):
+    def __init__(self, n_inputs: int, n_hidden: List[int], n_classes: int, learning_rate=1e-2):
+    def forward(self, x: np.ndarray) -> np.ndarray:
+    def backward(self, dout: np.ndarray) -> None:
+    def update(self):
+    def __call__(self, x: np.ndarray) -> np.ndarray:
+```
+
+​	The class `MLP` stipulate the layer structure of the model, rule of forward propagation, rule of backward propagation, and update parameters. In a nutshell, the input layer's shape of MLP could multiple with input data, and the output is the number of distinct types of labels (here, 2).
 
 ​	Forward in the order of [input -> hidden -> output]
 
 ​	Backward in the order of [output -> hidden -> input]
 
-```python
-class MLP(object):
-        input_layer = [Linear(n_inputs, n_hidden[0], learning_rate), ReLU()]
-        hidden_layers = []
-        output_layer = [Linear(n_hidden[-1], n_classes, learning_rate), SoftMax()]
-        for i in range(len(n_hidden) - 1):
-            hidden_layers += [Linear(n_hidden[i], n_hidden[i + 1], learning_rate), ReLU()]
-        self.layers = input_layer + hidden_layers + output_layer
-        self.loss_fn = CrossEntropy()
-    def forward(self, x: np.ndarray) -> np.ndarray:
-        out = x
-        for layer in self.layers:
-            out = layer(out)  # __call__() will invoke def forward()
-        return out
-    def backward(self, dout: np.ndarray) -> None:
-        for layer in reversed(self.layers):
-            dout = layer.backward(dout)
-    def update(self):
-        for layer in reversed(self.layers):
-            if 'Linear' in str(type(layer)):
-                layer.update()
-    def __call__(self, x: np.ndarray) -> np.ndarray:
-      	return self.forward(x)
-```
 
-**(3) `train_mlp_numpy.py` structure (import from `mlp_numpy.py`)**
 
-​	Utility functions structure
+#### Task 2
+
+**`train_mlp_numpy.py` **
 
 ```python
-def accuracy(predictions, targets):  # accuracy of right number
-def counter(predictions, targets):  # count right number
+def accuracy(predictions, targets):
+def counter(predictions, targets):
 def plots(dataset, labels, acc_train, acc_test, loss_train, loss_test):
-    # plot 1, point map [Using ChatGPT]
-    # plot 2, accuracy curve (train + test) [Using ChatGPT]
-    # plot 3, loss curve (train + test) [Using ChatGPT]
+def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq: int, draw_plots: bool,
+          use_batch: bool, stochastic_size: int):
 ```
 
-​	Core function `train()` structure:
+​	
+
+
+
+
+
+The first thing to train my MLP would be to generate train and test data. As the assignment requires, I used the python package sklearn.datasets.make_moons to generate this data set. I generated 1000 data, shuffle them, record their respective label, and used 80% as train data and 20% as test data. To use their label and include it in the process of training, I used the trick called the one-hot label to encode labels. After I know what this encoding and decoding process means, I wrote two functions: encode and decode to transform labels. The encoding process would change one integer into a 1-D array with length 2: if this integer is 1, then the one hot label should [1, 0], or it should be [0, 1]. And decode function would transform one array back to an integer: is the first value is larger than 0.5, then the answer should be 1, or should be 0. Then I try to use the given argument parser. I found that this could take into four possible parameters including the maximum number of epoch, the list of neurons in hidden layers, the learning rate, and the evaluation frequency, which is used to compute and record accuracy and plot them at the end. So I finished the accuracy evaluation function and prepare to begin training. In this part, I used batch gradient descent as the optimizer. BGD means that this MLP would only update its weight and bias after one epoch, which means all the data has forward and backward once. The detailed implementation is that, during each epoch, first we forward the data one by one. After each data is forwarded, the gradient of weight and gradients of bias computed should be added to a structure which is designed to save all these gradients of each layer, so after all the data is calculated once, we use the sum of the gradient of weight of every linear module, divide by the batch size (in this case is the length of training data), multiplies with learning rate and update each layer’s weight and bias.
 
 ```python
 def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq: int, draw_plots: bool,
@@ -298,21 +274,11 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
         plots(dataset, labels, acc_train, acc_test, loss_train, loss_test)
 ```
 
-​	Use `main()` to invoke `train()`
-
-```python
-def main():
-    # some args setting
-    train(flags.dnn_hidden_units, flags.learning_rate, flags.max_steps, flags.eval_freq,
-          flags.draw_plots, flags.use_batch, flags.stochastic_size)
-
-if __name__ == '__main__':
-    main()
-```
 
 
 
-### 2.2 Results and analysis
+
+### 2.2 Experiments and analysis
 
 **(1) Command Line output sample:**
 
@@ -331,18 +297,18 @@ Training complete!
 | ------------------------- | ------------------------------------------------------------ |
 | ![](./pics/part2_2.png)   | ![](./pics/part2_3.png)                                      |
 | **Points Map (Original)** | **Analysis**                                                 |
-| ![](./pics/part2_1.png)   | 1. The noise is 0.2, so two point set have a relatively big area of overlapping, which let the problem become harder.<br />2. Both the curve of Accuracy and Loss shows **a good convergence** after a short period of learning process.<br />3. Final accuracy rate is **near 90%**<br />4. Final loss is **lower than 400** and **<90% of the initial loss**<br />5. The performance of the model is **acceptable** |
+| ![](./pics/part2_1.png)   | 1. The noise is 0.2, so two point set have a relatively big area of overlapping, which let the problem become harder.<br />2. Both the curve of Accuracy and Loss shows **a good convergence** after a short period of learning process.<br />3. Final accuracy rate is 87.0%, **near 90%**<br />4. Final loss is **lower than 400** and **<90% of the initial loss**<br />5. The performance of the model is **acceptable** |
 
 
 
-## ➤ Part 3 MLP, Stochastic
+## ➤ Part 2 MLP, Stochastic
 
 **How to run:** 
 
 * Way 1: `python ./Part_2/train_mlp_numpy.py --use_batch False --stochastic_size 20` (or other size from 1 to 800)
 * Way 2: run instructions in `./Part_2/main.ipynb`
 
-### 3.1 Code review
+### 2.3 Code review
 
 **(1) Only difference to Part 2 (batch way), in `train_mlp_numpy.py`**
 
@@ -366,7 +332,7 @@ Training complete!
 
 
 
-### 3.2 Results and analysis
+### 2.4 Experiments and analysis
 
 * All the results of [batch_size = 1, 20, 50] are same to Part 2 (batch way). *More figures could be found at **Appendix***.
 * Although the gradients of each sample in Stochastic training may have large variance, the average direction of these gradients is usually consistent.
@@ -375,35 +341,39 @@ Training complete!
 
 
 
-## ➤ Part 4 Theoretical analysis
-
-### 4.1 Learning
-
-**Learning process of the perceptron**
-
-
-
-
-
-### 4.2 Forward and backward propagation
-
-**Forward and backward propagation of layers in MLP**
-
-
-
-
-
 
 
 ## ➤ Acknowledgement
 
-I would like to thank Prof.Zhang, Ms.Wang and all TAs for their excellent work. 👏😀👏
+I would like to thank Prof.Zhang, Dor.Wang and all TAs for their excellent work. 👏😀👏
 
 
 
 ## ➤ Appendix
 
-### 1 More figures of 3.2
+### More figures of 1.2
+
+**Group 1** Regular
+
+| Points Map              | Accuracy Curve          |
+| ----------------------- | ----------------------- |
+| ![](./pics/part1_2.png) | ![](./pics/part1_1.png) |
+
+**Group 2** Two Gaussians are too close
+
+| Points Map              | Accuracy Curve          |
+| ----------------------- | ----------------------- |
+| ![](./pics/part1_4.png) | ![](./pics/part1_3.png) |
+
+**Group 3** Variance is too high
+
+| Points Map              | Accuracy Curve          |
+| ----------------------- | ----------------------- |
+| ![](./pics/part1_6.png) | ![](./pics/part1_5.png) |
+
+
+
+### More figures of 2.4
 
 ​	You can find source figures in `./Part_2/main.ipynb`
 
