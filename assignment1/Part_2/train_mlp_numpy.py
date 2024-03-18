@@ -43,7 +43,7 @@ def counter(predictions, targets):
 
 
 def plots(dataset, labels, acc_train, acc_test, loss_train, loss_test):
-    # plot 1, point map
+    # plot 1, point map [Using ChatGPT]
     class_0 = dataset[labels == 0]
     class_1 = dataset[labels == 1]
     plt.figure(figsize=(8, 6))
@@ -56,7 +56,7 @@ def plots(dataset, labels, acc_train, acc_test, loss_train, loss_test):
     plt.grid(True)
     plt.show()
 
-    # plot 2, accuracy curve (train + test)
+    # plot 2, accuracy curve (train + test) [Using ChatGPT]
     x_train = list(range(len(acc_train)))
     x_test = [i * EVAL_FREQ_DEFAULT for i in range(len(acc_test))]
     plt.figure(figsize=(8, 6))
@@ -69,7 +69,7 @@ def plots(dataset, labels, acc_train, acc_test, loss_train, loss_test):
     plt.grid(True)
     plt.show()
 
-    # plot 3, loss curve (train + test)
+    # plot 3, loss curve (train + test) [Using ChatGPT]
     x_train = list(range(len(loss_train)))
     x_test = [i * EVAL_FREQ_DEFAULT for i in range(len(loss_test))]
     plt.figure(figsize=(8, 6))
@@ -123,8 +123,11 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
         else:
             loss = 0
             count_right = 0
+            indices = np.random.permutation(len(dataset_train))  # shuffle in the same order
+            xs = dataset_train[indices]
+            ys = labels_train_oh[indices]
             if stochastic_size == 1:
-                for eg, y in zip(dataset_train, labels_train_oh):
+                for eg, y in zip(xs, ys):
                     eg = np.reshape(eg, newshape=(1, 2))
                     pred_oh = mlp(eg)
                     loss += loss_fn(pred_oh, y)
@@ -133,9 +136,9 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
                     mlp.backward(dout)
                     mlp.update()
             else:
-                for i in range(0, len(dataset_train), stochastic_size):
-                    x = dataset_train[i:i + stochastic_size]
-                    y = labels_train_oh[i:i + stochastic_size]
+                for i in range(0, len(xs), stochastic_size):
+                    x = xs[i:i + stochastic_size]
+                    y = ys[i:i + stochastic_size]
                     pred_oh = mlp(x)
                     loss += loss_fn(pred_oh, y)
                     count_right += counter(pred_oh, y)
@@ -143,7 +146,7 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
                     mlp.backward(dout)
                     mlp.update()
             loss_train.append(loss)
-            acc_train.append(count_right / len(dataset_train) * 100)
+            acc_train.append(count_right / len(xs) * 100)
 
         # print(f"Step: {step}, Loss: {loss_train[-1]}, Accuracy: {acc_train[-1]}")
 
@@ -164,7 +167,7 @@ def main():
     """
     Main function.
     """
-    np.random.seed(SEED_DEFAULT)
+    # np.random.seed(SEED_DEFAULT)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--dnn_hidden_units', type=str, default=DNN_HIDDEN_UNITS_DEFAULT,
