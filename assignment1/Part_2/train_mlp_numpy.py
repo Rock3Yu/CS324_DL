@@ -1,22 +1,23 @@
 import argparse
-import time
 
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-from sklearn.preprocessing import OneHotEncoder
 
 from mlp_numpy import MLP
 
-# Default constants
+SEED_DEFAULT = 27
+
 DNN_HIDDEN_UNITS_DEFAULT = '20'
-# DNN_HIDDEN_UNITS_DEFAULT = '16,32,16'
 LEARNING_RATE_DEFAULT = 1e-2
 MAX_EPOCHS_DEFAULT = 1500  # adjust if you use batch or not
 EVAL_FREQ_DEFAULT = 10
-SEED_DEFAULT = 27
+
+DRAW_PLOTS_DEFAULT = True
+USE_BATCH_DEFAULT = True
+STOCHASTIC_SIZE_DEFAULT = 50
 
 
 def accuracy(predictions, targets):
@@ -35,11 +36,55 @@ def accuracy(predictions, targets):
     return accuracy_score(targets, predictions) * 100
 
 
-def plots():
-    pass
+def counter(predictions, targets):
+    targets = np.argmax(targets, axis=-1)
+    predictions = np.argmax(predictions, axis=-1)
+    return np.sum(predictions == targets)
 
 
-def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq: int, draw_plots=True):
+def plots(dataset, labels, acc_train, acc_test, loss_train, loss_test):
+    # plot 1, point map
+    class_0 = dataset[labels == 0]
+    class_1 = dataset[labels == 1]
+    plt.figure(figsize=(8, 6))
+    plt.scatter(class_0[:, 0], class_0[:, 1], c='blue', label='Class 0')
+    plt.scatter(class_1[:, 0], class_1[:, 1], c='red', label='Class 1')
+    plt.title('Generated Data with Labels')
+    plt.xlabel('x-axis')
+    plt.ylabel('Y-axis')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    # plot 2, accuracy curve (train + test)
+    x_train = list(range(len(acc_train)))
+    x_test = [i * EVAL_FREQ_DEFAULT for i in range(len(acc_test))]
+    plt.figure(figsize=(8, 6))
+    plt.plot(x_train, acc_train, label='Train Accuracy', color='blue')
+    plt.plot(x_test, acc_test, label='Test Accuracy', color='red')
+    plt.title('Training and Testing Accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    # plot 3, loss curve (train + test)
+    x_train = list(range(len(loss_train)))
+    x_test = [i * EVAL_FREQ_DEFAULT for i in range(len(loss_test))]
+    plt.figure(figsize=(8, 6))
+    plt.plot(x_train, loss_train, label='Train Loss', color='blue')
+    plt.plot(x_test, loss_test, label='Test Loss', color='red')
+    plt.title('Training and Testing Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
+def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq: int, draw_plots: bool,
+          use_batch: bool, stochastic_size: int):
     """
     Performs training and evaluation of MLP model.
     NOTE: Add necessary arguments such as the data, your model...
@@ -49,30 +94,15 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
         max_steps: Number of epochs to run trainer
         eval_freq: Frequency of evaluation on the test set
         draw_plots: Draw analysis plots
+        use_batch: Use batch or stochastic
+        stochastic_size: The size of batch, when using stochastic
     """
-    # done: Load your data here, use make_moons to create a dataset of 1000 points
-    dataset, labels = datasets.make_moons(n_samples=(400, 600), shuffle=True, noise=0.3, random_state=SEED_DEFAULT)
+    dataset, labels = datasets.make_moons(n_samples=(500, 500), shuffle=True, noise=0.2, random_state=SEED_DEFAULT)
     dataset_train, dataset_test, labels_train, labels_test = (
         train_test_split(dataset, labels, test_size=0.2, random_state=SEED_DEFAULT))
     labels_train_oh = np.array([[1, 0] if i == 0 else [0, 1] for i in labels_train])
     labels_test_oh = np.array([[1, 0] if i == 0 else [0, 1] for i in labels_test])
 
-    # points plot
-    plot = False
-    if plot:
-        class_0 = dataset[labels == 0]
-        class_1 = dataset[labels == 1]
-        plt.figure(figsize=(8, 6))
-        plt.scatter(class_0[:, 0], class_0[:, 1], c='blue', label='Class 0')
-        plt.scatter(class_1[:, 0], class_1[:, 1], c='red', label='Class 1')
-        plt.title('Generated Data with Labels')
-        plt.xlabel('Feature 1')
-        plt.ylabel('Feature 2')
-        plt.legend()
-        plt.grid(True)
-        plt.show()
-
-    # done: Initialize your MLP model and loss function (CrossEntropy) here
     hidden_layers = [int(i) for i in dnn_hidden_units.split(",")]
     mlp = MLP(2, hidden_layers, 2, learning_rate)
     loss_fn = mlp.loss_fn
@@ -81,67 +111,61 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
     acc_train, acc_test = [], []
 
     for step in range(max_steps):
-        # done: The training loop
-        batch = True
-        if batch:
-            # 1 Forward pass
+        # batch
+        if use_batch:
             pred_oh = mlp(dataset_train)
-            # 2 Compute loss
             loss_train.append(loss_fn(pred_oh, labels_train_oh))
             acc_train.append(accuracy(pred_oh, labels_train_oh))
-            # 3&4 Backward pass (compute gradients); Update weights
             dout = loss_fn.backward(pred_oh, labels_train_oh)
             mlp.backward(dout)
             mlp.update()
-
-        else:  # stochastic
+        # stochastic
+        else:
             loss = 0
             count_right = 0
-            for eg, y in zip(dataset_train, labels_train_oh):
-                eg = np.reshape(eg, newshape=(1, 2))
-                pred_oh = mlp(eg)
-                loss += loss_fn(pred_oh, y)
-                count_right += (accuracy(pred_oh, [y]) == 100)
-                dout = loss_fn.backward(pred_oh, y)
-                mlp.backward(dout)
-                mlp.update()
+            if stochastic_size == 1:
+                for eg, y in zip(dataset_train, labels_train_oh):
+                    eg = np.reshape(eg, newshape=(1, 2))
+                    pred_oh = mlp(eg)
+                    loss += loss_fn(pred_oh, y)
+                    count_right += (accuracy(pred_oh, [y]) == 100)
+                    dout = loss_fn.backward(pred_oh, y)
+                    mlp.backward(dout)
+                    mlp.update()
+            else:
+                for i in range(0, len(dataset_train), stochastic_size):
+                    x = dataset_train[i:i + stochastic_size]
+                    y = labels_train_oh[i:i + stochastic_size]
+                    pred_oh = mlp(x)
+                    loss += loss_fn(pred_oh, y)
+                    count_right += counter(pred_oh, y)
+                    dout = loss_fn.backward(pred_oh, y)
+                    mlp.backward(dout)
+                    mlp.update()
             loss_train.append(loss)
             acc_train.append(count_right / len(dataset_train) * 100)
 
-        # others
-        print(f"Step: {step}, Loss: {loss_train[-1]}, Accuracy: {acc_train[-1]}")
+        # print(f"Step: {step}, Loss: {loss_train[-1]}, Accuracy: {acc_train[-1]}")
 
         if step % eval_freq == 0 or step == max_steps - 1:
-            # done: Evaluate the model on the test set
-            # 1. Forward pass on the test set
-            # 2. Compute loss and accuracy
             pred_oh = mlp(dataset_test)
-            loss_test.append(loss_fn(pred_oh, labels_test_oh))
+            loss_test.append(loss_fn(pred_oh, labels_test_oh) * 4)
             acc_test.append(accuracy(pred_oh, labels_test_oh))
             print(f"Step: {step}, Loss: {loss_test[-1]}, Accuracy: {acc_test[-1]}")
 
     print("Training complete!")
-    # if draw_plots:
-    #     plots()
-    #     print("Plots complete!")
 
-    # count = 0
-    # for layer in mlp.layers:
-    #     print(count)
-    #     count += 1
-    #     print(type(layer))
-    #     if 'Linear' in str(type(layer)):
-    #         print(layer.params['weight'].shape)
-    #         print(layer.params)
-    #         print(layer.grads)
-    #         print(layer.x)
+    if draw_plots:
+        plots(dataset, labels, acc_train, acc_test, loss_train, loss_test)
+        print("Plots complete!")
 
 
 def main():
     """
     Main function.
     """
-    # Parsing command line arguments
+    np.random.seed(SEED_DEFAULT)
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--dnn_hidden_units', type=str, default=DNN_HIDDEN_UNITS_DEFAULT,
                         help='Comma separated list of number of units in each hidden layer')
@@ -151,10 +175,17 @@ def main():
                         help='Number of epochs to run trainer')
     parser.add_argument('--eval_freq', type=int, default=EVAL_FREQ_DEFAULT,
                         help='Frequency of evaluation on the test set')
+
+    parser.add_argument('--draw_plots', type=bool, default=DRAW_PLOTS_DEFAULT,
+                        help='Draw analysis plots after training done')
+    parser.add_argument('--use_batch', type=bool, default=USE_BATCH_DEFAULT,
+                        help='Use batch when training, otherwise use stochastic way')
+    parser.add_argument('--stochastic_size', type=int, default=STOCHASTIC_SIZE_DEFAULT,
+                        help='The size of batch, when training by using stochastic')
     flags = parser.parse_known_args()[0]
 
-    # np.random.seed(SEED_DEFAULT)
-    train(flags.dnn_hidden_units, flags.learning_rate, flags.max_steps, flags.eval_freq)
+    train(flags.dnn_hidden_units, flags.learning_rate, flags.max_steps, flags.eval_freq,
+          flags.draw_plots, flags.use_batch, flags.stochastic_size)
 
 
 if __name__ == '__main__':
