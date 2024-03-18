@@ -20,13 +20,11 @@ class Linear(object):
         self.lr = learning_rate
         self.params = {
             'weight': np.random.randn(in_features, out_features) * 1e-2,
-            'bias': np.random.randn(out_features) * 1e-2
-            # 'weight': np.zeros((in_features, out_features)),
-            # 'bias': np.zeros(out_features)
+            'bias': np.random.randn(1, out_features) * 1e-2
         }
         self.grads = {
             'weight': np.zeros((in_features, out_features)),
-            'bias': np.zeros((out_features,))
+            'bias': np.zeros((1, out_features))
         }
 
     def forward(self, x):
@@ -44,15 +42,17 @@ class Linear(object):
         Args:
             dout: Upstream derivative
         """
-        self.grads['weight'] = np.dot(self.x.T, dout)  # dw
-        self.grads['bias'] = np.sum(dout, axis=0)  # db
+        self.grads['weight'] += np.dot(self.x.T, dout)  # dw
+        self.grads['bias'] += np.sum(dout, axis=0)  # db
         dx = np.dot(dout, self.params['weight'].T)
-        self.update()
         return dx
 
     def update(self):
-        self.params['weight'] -= self.lr * self.grads['weight']
-        self.params['bias'] -= self.lr * self.grads['bias']
+        size = 1  # len(self.x)
+        self.params['weight'] -= self.lr * self.grads['weight'] / size
+        self.params['bias'] -= self.lr * self.grads['bias'] / size
+        self.grads['weight'] = np.zeros_like(self.grads['weight'])
+        self.grads['bias'] = np.zeros_like(self.grads['bias'])
 
     def __call__(self, x):
         return self.forward(x)
@@ -125,7 +125,6 @@ class CrossEntropy(object):
         Hint: For softmax output followed by cross-entropy loss, the gradient simplifies to: p - y.
         """
         return x - y
-        # return (x - y) / len(x)
 
     def __call__(self, x, y):
         return self.forward(x, y)

@@ -62,5 +62,10 @@ class MLP(object):
         for layer in reversed(self.layers):
             dout = layer.backward(dout)
 
+    def update(self):
+        for layer in reversed(self.layers):
+            if 'Linear' in str(type(layer)):
+                layer.update()
+
     def __call__(self, x: np.ndarray) -> np.ndarray:
         return self.forward(x)

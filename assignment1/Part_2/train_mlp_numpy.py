@@ -92,6 +92,7 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
         # 3&4 Backward pass (compute gradients); Update weights
         dout = loss_fn.backward(pred_oh, labels_train_oh)
         mlp.backward(dout)
+        mlp.update()
 
         # others
         # print(f"Step: {step}, Loss: {loss_train[-1]}, Accuracy: {acc_train[-1]}")
