@@ -191,11 +191,11 @@ def main():
                         help='The size of batch, when training by using stochastic')
     flags = parser.parse_known_args()[0]
 
-    # train(flags.dnn_hidden_units, flags.learning_rate, flags.max_steps, flags.eval_freq,
-    #       flags.draw_plots, flags.use_batch, flags.stochastic_size)
-
     train(flags.dnn_hidden_units, flags.learning_rate, flags.max_steps, flags.eval_freq,
-          flags.draw_plots, False, 50)
+          flags.draw_plots, flags.use_batch, flags.stochastic_size)
+
+    # train(flags.dnn_hidden_units, flags.learning_rate, flags.max_steps, flags.eval_freq,
+    #       flags.draw_plots, False, 50)
 
 
 if __name__ == '__main__':
