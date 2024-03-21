@@ -131,20 +131,24 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
                     eg = np.reshape(eg, newshape=(1, 2))
                     pred_oh = mlp(eg)
                     loss += loss_fn(pred_oh, y)
-                    count_right += (accuracy(pred_oh, [y]) == 100)
-                    dout = loss_fn.backward(pred_oh, y)
-                    mlp.backward(dout)
-                    mlp.update()
+                    if accuracy(pred_oh, [y]) == 100:
+                        count_right += 1
+                    else:
+                        dout = loss_fn.backward(pred_oh, y)
+                        mlp.backward(dout)
+                        mlp.update()
             else:
                 for i in range(0, len(xs), stochastic_size):
                     x = xs[i:i + stochastic_size]
                     y = ys[i:i + stochastic_size]
                     pred_oh = mlp(x)
                     loss += loss_fn(pred_oh, y)
-                    count_right += counter(pred_oh, y)
-                    dout = loss_fn.backward(pred_oh, y)
-                    mlp.backward(dout)
-                    mlp.update()
+                    right = counter(pred_oh, y)
+                    count_right += right
+                    if right < stochastic_size:
+                        dout = loss_fn.backward(pred_oh, y)
+                        mlp.backward(dout)
+                        mlp.update()
             loss_train.append(loss)
             acc_train.append(count_right / len(xs) * 100)
 
@@ -187,8 +191,11 @@ def main():
                         help='The size of batch, when training by using stochastic')
     flags = parser.parse_known_args()[0]
 
+    # train(flags.dnn_hidden_units, flags.learning_rate, flags.max_steps, flags.eval_freq,
+    #       flags.draw_plots, flags.use_batch, flags.stochastic_size)
+
     train(flags.dnn_hidden_units, flags.learning_rate, flags.max_steps, flags.eval_freq,
-          flags.draw_plots, flags.use_batch, flags.stochastic_size)
+          flags.draw_plots, False, 50)
 
 
 if __name__ == '__main__':
