@@ -94,6 +94,10 @@ $$
 
 ​	Experiment with different sets of points (generated as described in Task 1). What happens during the training if the means of the <u>two Gaussians are too close</u> and/or if their <u>variance is too high</u>?
 
+**Plots**
+
+​	could be found at Appendix.
+
 **Experiments**
 
 |                       | Mean 1   | Covariance 1 | Mean 2   | Covariance 2 | Accuracy                    |
@@ -267,11 +271,12 @@ if __name__ == '__main__':
 **Command Line output sample**
 
 ```cmd
-Step: 0, Loss: 557.5666455613724, Accuracy: 47.5
-Step: 10, Loss: 1754.01361287073, Accuracy: 47.5
-Step: 20, Loss: 591.6212434589279, Accuracy: 87.0
+use_batch=True, stochastic_size=50
+Step: 0, Loss: 554.7744571113598, Accuracy: 47.0
+Step: 10, Loss: 1768.9171659279718, Accuracy: 47.0
 ...
-Step: 1499, Loss: 266.50884791013317, Accuracy: 87.0
+Step: 1490, Loss: 297.910208178201, Accuracy: 89.0
+Step: 1499, Loss: 223.51042434262368, Accuracy: 90.0
 Training complete!
 ```
 
@@ -284,10 +289,16 @@ Training complete!
 **Analysis**
 
 1. The noise is 0.2, so two point set have a relatively big area of overlapping, which let the problem become harder.
-2. Both the curve of Accuracy and Loss shows **a good convergence** ✅ after a short period of learning process.
-3. Final accuracy rate is 87.0%, **near 90%**
-4. Final loss is **lower than 400** and **<90% of the initial loss**
-5. The performance of the model is **acceptable**
+2. **Training speed**: The speed is very good.
+3. **Convergence**: Both the curve of Accuracy and Loss shows unacceptable performance of **convergences** ❌. This result may due to the batch size = 800, a relative large number, and learning_rate = 0.01. Weight update for each epoch is too large.
+4. **Accuracy**: Final **training accuracy rate** is around **85.0%**, while **test accuracy rate** is around **90.0%**.
+5. **Loss**: Final **training and test loss** is **lower than 400** and **near 10% of the initial loss**
+6. **Summary**: The performance of the model is **average**, but not the **stability** is not good.
+
+**Possible Improvement methods**
+
+1. Decrease the learning_rate when $epoch = max\_epoch / 2$​
+2. Use stochastic way to decrease the batch size
 
 
 
@@ -304,18 +315,27 @@ Training complete!
 
 ​	**\[TRAINING PROCESS\]** (stochastic)
 
-1. shuffle the input data
-2. batch size from 1 to specific integer (e.g. 20, 50)
-3. update after each batch
+​	Most parts of training process of stochastic is similar to batch way. However, stochastic way will firstly shuffle the order of input data, which will guarantee the robust of model while the distribution of input is same. What is more, stochastic way could change batch size from 1 to any specific integer (here, I use 1, 10, 25 to accomplish my experiments). After each batch, the weights of model will update immediately.
 
-
+​	To gain a better performance, I manually set a checker rule of update: If the prediction of a batch fully match the rule label, not weight update will conduct. In another word, weights will only update in the case of wrong prediction.
 
 ### 2.4 Experiments and analysis
 
-* All the results of [batch_size = 1, 20, 50] are same to Part 2 (batch way). *More figures could be found at **Appendix***.
-* Although the gradients of each sample in Stochastic training may have large variance, the average direction of these gradients is usually consistent.
-* The distribution of the training data is the same, so the results are similar.
-* Only when [batch_size = 1], The model is not very stable. However, the result is accecptable
+**Experiments Setting**
+
+​	I conduct three rounds of experiment. All of them used stochastic way to train and update weight. The batch sizes of them are 1, 10, 25, respectively. 
+
+**Plots**
+
+​	could be found at Appendix.
+
+**Analysis**
+
+1. **Training speed**: Smaller batch size (e.g. 1) could cause a slower training speed as the serial computation does not make full use of computer resources.
+2. **Convergence**: All is well.
+3. **Accuracy**: The accuracy curves show that both of them achieved better regression performances compared to batch way. For most cases, stochastic way could have a >95% accuracy in both training and testing set.
+4. **Loss**: The loss values of the three settings are steadily decreasing, and the batch_size=1 case is decreasing slowly. In the final loss value comparison, the batch_size=1 case is 543.0, and the batch_size=10 case is >250.0, batch_size=25 is about 75.0, which indicates that appropriately adjusting batch_size is more conducive to the reduction of loss.
+5. **Summary**: The model could stably achieve a good performance in stochastic way. 
 
 
 
@@ -359,13 +379,13 @@ I would like to thank Prof.Zhang, Dor.Wang and all TAs for their excellent work.
 | -------------------- | -------------------- |
 | ![](./pics/add1.png) | ![](./pics/add2.png) |
 
-**Group 2** Stochastic with batch_size = 20
+**Group 2** Stochastic with batch_size = 10
 
 | Accuracy Curve       | Loss Curve           |
 | -------------------- | -------------------- |
 | ![](./pics/add3.png) | ![](./pics/add4.png) |
 
-**Group 3** Stochastic with batch_size = 50
+**Group 3** Stochastic with batch_size = 25
 
 | Accuracy Curve       | Loss Curve           |
 | -------------------- | -------------------- |
