@@ -8,6 +8,7 @@ from sklearn.metrics import accuracy_score
 
 from mlp_numpy import MLP
 
+USE_SEED_DEFAULT = False
 SEED_DEFAULT = 27
 
 DNN_HIDDEN_UNITS_DEFAULT = '20'
@@ -97,9 +98,13 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
         use_batch: Use batch or stochastic
         stochastic_size: The size of batch, when using stochastic
     """
-    dataset, labels = datasets.make_moons(n_samples=(500, 500), shuffle=True, noise=0.2, random_state=SEED_DEFAULT)
+
+    print(f"use_batch={use_batch}, stochastic_size={stochastic_size}")
+
+    seed = SEED_DEFAULT if USE_SEED_DEFAULT else np.random.randint(4294967294)
+    dataset, labels = datasets.make_moons(n_samples=(500, 500), shuffle=True, noise=0.2, random_state=seed)
     dataset_train, dataset_test, labels_train, labels_test = (
-        train_test_split(dataset, labels, test_size=0.2, random_state=SEED_DEFAULT))
+        train_test_split(dataset, labels, test_size=0.2, random_state=seed))
     labels_train_oh = np.array([[1, 0] if i == 0 else [0, 1] for i in labels_train])
     labels_test_oh = np.array([[1, 0] if i == 0 else [0, 1] for i in labels_test])
 
@@ -185,14 +190,15 @@ def main():
 
     parser.add_argument('--draw_plots', type=bool, default=DRAW_PLOTS_DEFAULT,
                         help='Draw analysis plots after training done')
-    parser.add_argument('--use_batch', type=bool, default=USE_BATCH_DEFAULT,
+    parser.add_argument('--use_batch', type=str, default=str(USE_BATCH_DEFAULT),
                         help='Use batch when training, otherwise use stochastic way')
     parser.add_argument('--stochastic_size', type=int, default=STOCHASTIC_SIZE_DEFAULT,
                         help='The size of batch, when training by using stochastic')
     flags = parser.parse_known_args()[0]
 
+    use_batch = flags.use_batch.lower() == 'true'
     train(flags.dnn_hidden_units, flags.learning_rate, flags.max_steps, flags.eval_freq,
-          flags.draw_plots, flags.use_batch, flags.stochastic_size)
+          flags.draw_plots, use_batch, flags.stochastic_size)
 
     # train(flags.dnn_hidden_units, flags.learning_rate, flags.max_steps, flags.eval_freq,
     #       flags.draw_plots, False, 50)
