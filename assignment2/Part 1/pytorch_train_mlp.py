@@ -15,6 +15,7 @@ EVAL_FREQ_DEFAULT = 10
 
 FLAGS = None
 
+
 def accuracy(predictions, targets):
     """
     Computes the prediction accuracy, i.e., the average of correct predictions
@@ -26,6 +27,7 @@ def accuracy(predictions, targets):
         accuracy: scalar float, the accuracy of predictions.
     """
     return accuracy
+
 
 def train():
     """
@@ -39,18 +41,19 @@ def main():
     """
     Main function
     """
-    train()
-
-if __name__ == '__main__':
     # Command line arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dnn_hidden_units', type = str, default = DNN_HIDDEN_UNITS_DEFAULT,
-                      help='Comma separated list of number of units in each hidden layer')
-    parser.add_argument('--learning_rate', type = float, default = LEARNING_RATE_DEFAULT,
-                      help='Learning rate')
-    parser.add_argument('--max_steps', type = int, default = MAX_EPOCHS_DEFAULT,
-                      help='Number of epochs to run trainer.')
+    parser.add_argument('--dnn_hidden_units', type=str, default=DNN_HIDDEN_UNITS_DEFAULT,
+                        help='Comma separated list of number of units in each hidden layer')
+    parser.add_argument('--learning_rate', type=float, default=LEARNING_RATE_DEFAULT,
+                        help='Learning rate')
+    parser.add_argument('--max_steps', type=int, default=MAX_EPOCHS_DEFAULT,
+                        help='Number of epochs to run trainer.')
     parser.add_argument('--eval_freq', type=int, default=EVAL_FREQ_DEFAULT,
-                          help='Frequency of evaluation on the test set')
-    FLAGS, unparsed = parser.parse_known_args()
+                        help='Frequency of evaluation on the test set')
+    flags, unparsed = parser.parse_known_args()
+    train()
+
+
+if __name__ == '__main__':
     main()
