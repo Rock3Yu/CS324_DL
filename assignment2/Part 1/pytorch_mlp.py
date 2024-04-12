@@ -19,7 +19,7 @@ class MLP(nn.Module):
         super(MLP, self).__init__()
         input_layer = [Linear(n_inputs, n_hidden[0]), ReLU()]
         hidden_layer = []
-        output_layer = [Linear(n_hidden[-1], n_classes), Softmax()]
+        output_layer = [Linear(n_hidden[-1], n_classes), Softmax(dim=1)]
         for i in range(len(n_hidden) - 1):
             hidden_layer += [Linear(n_hidden[i], n_hidden[i + 1]), ReLU()]
 
