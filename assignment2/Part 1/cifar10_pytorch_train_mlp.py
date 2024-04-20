@@ -98,5 +98,5 @@ def main():
 
 
 if __name__ == '__main__':
-    print("MLP utilized in PyTorch")
+    print("MLP utilized in PyTorch, CIFAR10")
     main()

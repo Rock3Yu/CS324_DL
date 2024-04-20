@@ -1,24 +1,9 @@
 import argparse
 
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn import datasets
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 from numpy_mlp import MLP
-
-USE_SEED_DEFAULT = False
-SEED_DEFAULT = 27
-
-DNN_HIDDEN_UNITS_DEFAULT = '20'
-LEARNING_RATE_DEFAULT = 1e-2
-MAX_EPOCHS_DEFAULT = 1500  # adjust if you use batch or not
-EVAL_FREQ_DEFAULT = 10
-
-DRAW_PLOTS_DEFAULT = True
-USE_BATCH_DEFAULT = True
-STOCHASTIC_SIZE_DEFAULT = 50
+from util import *
 
 
 def accuracy(predictions, targets):
@@ -43,49 +28,8 @@ def counter(predictions, targets):
     return np.sum(predictions == targets)
 
 
-def plots(dataset, labels, acc_train, acc_test, loss_train, loss_test):
-    # plot 1, point map [Using ChatGPT]
-    class_0 = dataset[labels == 0]
-    class_1 = dataset[labels == 1]
-    plt.figure(figsize=(8, 6))
-    plt.scatter(class_0[:, 0], class_0[:, 1], c='blue', label='Class 0')
-    plt.scatter(class_1[:, 0], class_1[:, 1], c='red', label='Class 1')
-    plt.title('Generated Data with Labels')
-    plt.xlabel('x-axis')
-    plt.ylabel('Y-axis')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-
-    # plot 2, accuracy curve (train + test) [Using ChatGPT]
-    x_train = list(range(len(acc_train)))
-    x_test = [i * EVAL_FREQ_DEFAULT for i in range(len(acc_test))]
-    plt.figure(figsize=(8, 6))
-    plt.plot(x_train, acc_train, label='Train Accuracy', color='blue')
-    plt.plot(x_test, acc_test, label='Test Accuracy', color='red')
-    plt.title('Training and Testing Accuracy')
-    plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-
-    # plot 3, loss curve (train + test) [Using ChatGPT]
-    x_train = list(range(len(loss_train)))
-    x_test = [i * EVAL_FREQ_DEFAULT for i in range(len(loss_test))]
-    plt.figure(figsize=(8, 6))
-    plt.plot(x_train, loss_train, label='Train Loss', color='blue')
-    plt.plot(x_test, loss_test, label='Test Loss', color='red')
-    plt.title('Training and Testing Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-
-
-def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq: int, draw_plots: bool,
-          use_batch: bool, stochastic_size: int):
+def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq: int,
+          use_batch: bool, stochastic_size: int, data: str):
     """
     Performs training and evaluation of MLP model.
     NOTE: Add necessary arguments such as the data, your model...
@@ -102,11 +46,8 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
     print(f"use_batch={use_batch}, stochastic_size={stochastic_size}")
 
     seed = SEED_DEFAULT if USE_SEED_DEFAULT else np.random.randint(4294967294)
-    dataset, labels = datasets.make_moons(n_samples=(500, 500), shuffle=True, noise=0.2, random_state=seed)
-    dataset_train, dataset_test, labels_train, labels_test = (
-        train_test_split(dataset, labels, test_size=0.2, random_state=seed))
-    labels_train_oh = np.array([[1, 0] if i == 0 else [0, 1] for i in labels_train])
-    labels_test_oh = np.array([[1, 0] if i == 0 else [0, 1] for i in labels_test])
+    dataset, labels, dataset_train, dataset_test, labels_train, labels_test, \
+        labels_train_oh, labels_test_oh = make_data(True, seed, data == DATAS_DEFAULT[0])
 
     hidden_layers = [int(i) for i in dnn_hidden_units.split(",")]
     mlp = MLP(2, hidden_layers, 2, learning_rate)
@@ -154,6 +95,7 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
                         dout = loss_fn.backward(pred_oh, y)
                         mlp.backward(dout)
                         mlp.update()
+
             loss_train.append(loss)
             acc_train.append(count_right / len(xs) * 100)
 
@@ -167,9 +109,11 @@ def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq
 
     print("Training complete!")
 
-    if draw_plots:
-        plots(dataset, labels, acc_train, acc_test, loss_train, loss_test)
-        print("Plots complete!")
+    plots(dataset_train, labels_train, mlp(dataset_train),
+          dataset_test, labels_test, mlp(dataset_test),
+          acc_train, acc_test,
+          loss_train, loss_test)
+    print("Plots complete!")
 
 
 def main():
@@ -188,20 +132,17 @@ def main():
     parser.add_argument('--eval_freq', type=int, default=EVAL_FREQ_DEFAULT,
                         help='Frequency of evaluation on the test set')
 
-    parser.add_argument('--draw_plots', type=bool, default=DRAW_PLOTS_DEFAULT,
-                        help='Draw analysis plots after training done')
     parser.add_argument('--use_batch', type=str, default=str(USE_BATCH_DEFAULT),
                         help='Use batch when training, otherwise use stochastic way')
-    parser.add_argument('--stochastic_size', type=int, default=STOCHASTIC_SIZE_DEFAULT,
+    parser.add_argument('--batch_size', type=int, default=BATCH_SIZE_DEFAULT,
                         help='The size of batch, when training by using stochastic')
+    parser.add_argument('--data', type=str, default=DATAS_DEFAULT[0], choices=DATAS_DEFAULT,
+                        help='moons/circles')
     flags = parser.parse_known_args()[0]
 
     use_batch = flags.use_batch.lower() == 'true'
-    # train(flags.dnn_hidden_units, flags.learning_rate, flags.max_steps, flags.eval_freq,
-    #       flags.draw_plots, use_batch, flags.stochastic_size)
-
     train(flags.dnn_hidden_units, flags.learning_rate, flags.max_steps, flags.eval_freq,
-          flags.draw_plots, False, 5)
+          use_batch, flags.batch_size, flags.data)
 
 
 if __name__ == '__main__':
