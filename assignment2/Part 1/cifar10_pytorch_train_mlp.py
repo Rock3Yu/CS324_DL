@@ -4,7 +4,8 @@ from __future__ import print_function
 
 import argparse
 
-import torch
+import torchvision
+from torchvision import transforms
 from sklearn.metrics import accuracy_score
 
 from pytorch_mlp import MLP
@@ -23,61 +24,106 @@ def counter(predictions, targets):
     return torch.sum(targets == predictions)
 
 
-def train(dnn_hidden_units: str, learning_rate: float, max_steps: int, eval_freq: int, data: str):
-    print("mini-batch training, with batch = ", BATCH_SIZE_DEFAULT)
+# def show_img(images, labels, classes):
+#     def imshow(img):
+#         img = img / 2 + 0.5
+#         npimg = img.numpy()
+#         plt.imshow(np.transpose(npimg, (1, 2, 0)))
+#         plt.show()
+#
+#     # imshow(torchvision.utils.make_grid(images))
+#     print(' '.join(f'{classes[labels[j]]:5s}' for j in range(BATCH_SIZE_DEFAULT)))
+
+
+def train(dnn_hidden_units: str, learning_rate: float, pure_test: bool):
+    print('mini-batch training, with batch =', BATCH_SIZE_DEFAULT)
+    print('dnn_hidden_units =', dnn_hidden_units)
     seed = SEED_DEFAULT if USE_SEED_DEFAULT else np.random.randint(4294967293)
-    dataset, labels, dataset_train, dataset_test, labels_train, labels_test, \
-        labels_train_oh, labels_test_oh = make_data(False, seed, data == DATAS_DEFAULT[0])
+    MODEL_PATH = './cifar_mlp_' + dnn_hidden_units + '.pth'
 
-    hidden_layers = [int(i) for i in dnn_hidden_units.split(",")]
-    mlp = MLP(2, hidden_layers, 2)
+    transform = transforms.Compose(
+        [transforms.ToTensor(),
+         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+    )
+    dataset_train = torchvision.datasets.CIFAR10(root='./CIFAR10', train=True, download=True, transform=transform)
+    dataset_test = torchvision.datasets.CIFAR10(root='./CIFAR10', train=False, download=True, transform=transform)
+    loader_train = torch.utils.data.DataLoader(dataset_train, batch_size=BATCH_SIZE_DEFAULT,
+                                               shuffle=True, num_workers=2)
+    loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=BATCH_SIZE_DEFAULT,
+                                              shuffle=False, num_workers=2)
+    classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+
+    # dataiter = iter(loader_train)
+    # images, labels = next(dataiter)
+    # show_img(images, labels, classes)
+
+    # print(images[0].shape)  # torch.Size([3, 32, 32])
+    hidden_layers = [int(i) for i in dnn_hidden_units.split(',')]
+    mlp = MLP(3 * 32 * 32, hidden_layers, 10)
     loss_fn = mlp.loss_fn
-    optimizer = torch.optim.Adam(mlp.parameters(), lr=learning_rate)
+    # optimizer = torch.optim.Adam(mlp.parameters(), lr=learning_rate)  # very bad here
+    optimizer = torch.optim.SGD(mlp.parameters(), lr=learning_rate, momentum=0.8)  # good!
 
-    loss_train, loss_test = [], []
-    acc_train, acc_test = [], []
-
-    for step in range(max_steps):
-        mlp.train()
-        loss_sum = 0
-        count_right = 0
-        indices = np.random.permutation(len(dataset_train))  # shuffle in the same order
-        xs = dataset_train[indices]
-        ys = labels_train_oh[indices]
-
-        for i in range(0, len(xs), BATCH_SIZE_DEFAULT):
-            x = xs[i:i + BATCH_SIZE_DEFAULT]
-            y = ys[i:i + BATCH_SIZE_DEFAULT]
-            pred_oh = mlp(x)
-            optimizer.zero_grad()
-            loss = loss_fn(pred_oh, y)
-            loss_sum += loss
-            right = counter(pred_oh, y)
-            count_right += right
-            if right < BATCH_SIZE_DEFAULT:
+    # train
+    if not pure_test:
+        for epoch in range(2):
+            mlp.train()
+            running_loss = 0
+            for i, data in enumerate(loader_train, 0):
+                inputs, labels = data
+                inputs = inputs.view(inputs.size(0), -1)
+                optimizer.zero_grad()
+                outputs = mlp(inputs)
+                loss = loss_fn(outputs, labels)
                 loss.backward()
                 optimizer.step()
+                running_loss += loss.item()
+                if i % 2000 == 1999:
+                    print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 2000:.3f}')
+                    running_loss = 0.0
+        print('Training complete!')
+        torch.save(mlp.state_dict(), MODEL_PATH)
+        print('Model save to:', MODEL_PATH)
 
-        loss_train.append(loss_sum)
-        acc_train.append(count_right / len(xs) * 100)
+    # test
+    mlp.load_state_dict(torch.load(MODEL_PATH))
+    # dataiter = iter(loader_test)
+    # images, labels = next(dataiter)
+    # images = images.view(images.size(0), -1)
+    # show_img(images, labels, classes)
+    # outputs = mlp(images)
+    # _, predicted = torch.max(outputs, 1)
+    # print('Predicted: ', ' '.join(f'{classes[predicted[j]]:5s}' for j in range(BATCH_SIZE_DEFAULT)))
 
-        if step % eval_freq == 0 or step == max_steps - 1:
-            mlp.eval()
-            pred_oh = mlp(dataset_test)
-            loss_test.append(loss_fn(pred_oh, labels_test_oh) * 4 * 200 / BATCH_SIZE_DEFAULT)
-            acc_test.append(accuracy(pred_oh, labels_test_oh))
-            print(f"Step: {step}, Loss: {loss_test[-1]}, Accuracy: {acc_test[-1]}")
+    # rate of correct
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for data in loader_test:
+            images, labels = data
+            images = images.view(images.size(0), -1)
+            outputs = mlp(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+    print(f'Accuracy of the network on the 10000 test images: {100 * correct // total} %')
 
-    print("Training complete!")
-
-    loss_train, loss_test = [i.detach().numpy() for i in loss_train], [i.detach().numpy() for i in loss_test]
-    plots(np.array(dataset_train), np.array(labels_train), mlp(dataset_train).detach().numpy(),
-          np.array(dataset_test), np.array(labels_test), mlp(dataset_test).detach().numpy(),
-          acc_train, acc_test,
-          loss_train, loss_test)
-    print("Plots complete!")
-
-    print(len(acc_train), len(acc_test))
+    # rate of correct by classes
+    correct_pred = {classname: 0 for classname in classes}
+    total_pred = {classname: 0 for classname in classes}
+    with torch.no_grad():
+        for data in loader_test:
+            images, labels = data
+            images = images.view(images.size(0), -1)
+            outputs = mlp(images)
+            _, predictions = torch.max(outputs, 1)
+            for label, prediction in zip(labels, predictions):
+                if label == prediction:
+                    correct_pred[classes[label]] += 1
+                total_pred[classes[label]] += 1
+    for classname, correct_count in correct_pred.items():
+        accuracy = 100 * float(correct_count) / total_pred[classname]
+        print(f'Accuracy for class: {classname:5s} is {accuracy:.1f} %')
 
 
 def main():
@@ -86,17 +132,19 @@ def main():
                         help='Comma separated list of number of units in each hidden layer')
     parser.add_argument('--learning_rate', type=float, default=LEARNING_RATE_DEFAULT,
                         help='Learning rate')
-    parser.add_argument('--max_steps', type=int, default=MAX_EPOCHS_DEFAULT,
-                        help='Number of epochs to run trainer.')
-    parser.add_argument('--eval_freq', type=int, default=EVAL_FREQ_DEFAULT,
-                        help='Frequency of evaluation on the test set')
-    parser.add_argument('--data', type=str, default=DATAS_DEFAULT[0], choices=DATAS_DEFAULT,
-                        help='moons/circles')
+    parser.add_argument('--pure_test', type=bool, default=False,
+                        help='[True or False] ---> [Test or Train&Test]')
 
     flags, unparsed = parser.parse_known_args()
-    train(flags.dnn_hidden_units, flags.learning_rate, flags.max_steps, flags.eval_freq, flags.data)
+    flags.learning_rate = 5e-3
+    # flags.dnn_hidden_units = '1024,256,64,32'
+    # flags.dnn_hidden_units = '1024,256,32'
+    # flags.dnn_hidden_units = '256,32'
+    flags.dnn_hidden_units = '256'  # best
+    # flags.dnn_hidden_units = '64'
+    train(flags.dnn_hidden_units, flags.learning_rate, flags.pure_test)
 
 
 if __name__ == '__main__':
-    print("MLP utilized in PyTorch, CIFAR10")
+    print('MLP utilized in PyTorch. CIFAR10')
     main()
