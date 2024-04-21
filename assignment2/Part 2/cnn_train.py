@@ -1,19 +1,22 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+# from __future__ import absolute_import
+# from __future__ import division
+# from __future__ import print_function
 
 import argparse
+import numpy as np
 import torch
+from torch.utils.data import Subset
 import torchvision
 from torchvision import transforms
 from sklearn.metrics import accuracy_score
 from datetime import datetime, timedelta
 
 from cnn_model import CNN
+from util import plots_for_part2
 
 LEARNING_RATE_DEFAULT = 1e-4
 BATCH_SIZE_DEFAULT = 32
-MAX_EPOCHS_DEFAULT = 1  # 5000
+MAX_EPOCHS_DEFAULT = 5000
 EVAL_FREQ_DEFAULT = 500
 OPTIMIZER_DEFAULT = 'ADAM'
 DATA_DIR_DEFAULT = '../Part 1/CIFAR10'
@@ -41,6 +44,13 @@ def train(lr: int, max_steps: int, batch_size: int, eval_freq: int, data_dir: st
     )
     dataset_train = torchvision.datasets.CIFAR10(root=data_dir, train=True, download=True, transform=transform)
     dataset_test = torchvision.datasets.CIFAR10(root=data_dir, train=False, download=True, transform=transform)
+
+    # 使用子集，选择总数10%的样本
+    subset_indices_train = torch.randperm(len(dataset_train))[:max_steps]
+    # subset_indices_test = torch.randperm(len(dataset_test))[:1000]
+    dataset_train = Subset(dataset_train, subset_indices_train)
+    # dataset_test = Subset(dataset_test, subset_indices_test)
+
     loader_train = torch.utils.data.DataLoader(dataset_train, batch_size=batch_size,
                                                shuffle=True, num_workers=2)
     loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size,
@@ -50,14 +60,45 @@ def train(lr: int, max_steps: int, batch_size: int, eval_freq: int, data_dir: st
     cnn = CNN(3 * 32 * 32, 10)
     loss_fn = cnn.loss_fn
     optimizer = torch.optim.Adam(cnn.parameters(), lr)
-    # print('CNN model structure:\n', cnn)
+
+    print('CNN model structure:\n', cnn)
+
+    # rate of correct
+    def test(print_result=False, partial=False):
+        cnn.eval()
+        correct = 0
+        total = 0
+        loss_ = 0
+        random_num = 0.5 + np.random.rand(1)
+        with torch.no_grad():
+            for data in loader_test:
+                random_num += np.random.rand(1) * 0.2
+                if partial and random_num > 1:
+                    random_num = 0
+                    continue
+                images, labels = data
+                outputs = cnn(images)
+                loss_ += loss_fn(outputs, labels).item()
+                _, predicted = torch.max(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+        rate = 100 * correct // total
+        if print_result:
+            print(f'Accuracy of the network on the 10000 test images: {rate} %')
+        loss_ = loss_ / total * eval_freq  # normalization
+        return rate, loss_
+
+    loss_train, loss_test = [], []
+    acc_train, acc_test = [], []
 
     # train
     if not pure_test:
-        for epoch in range(max_steps):
+        for epoch in range(1):
             cnn.train()
             running_loss = 0
+            cnt, cnt_right = 0., 0
             for i, data in enumerate(loader_train, 0):
+                cnt += batch_size
                 inputs, labels = data
                 optimizer.zero_grad()
                 outputs = cnn(inputs)
@@ -65,28 +106,32 @@ def train(lr: int, max_steps: int, batch_size: int, eval_freq: int, data_dir: st
                 loss.backward()
                 optimizer.step()
                 running_loss += loss.item()
-                if i % eval_freq == eval_freq - 1:
-                    print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / eval_freq:.3f}')
+                cnt_right += counter(outputs, labels)
+                real_i = i * batch_size
+
+                if int(real_i / eval_freq) != int((real_i - batch_size) / eval_freq):
+                    print(f'[{epoch + 1}, {real_i:5d}] loss: {running_loss / eval_freq:.3f}')
+                    acc_train.append((cnt_right / cnt) * 100)
+                    loss_train.append(running_loss)
                     running_loss = 0.0
+                    cnt = 0.
+                    # test while train
+                    acc_test_1, loss_test_1 = test(partial=True)
+                    acc_test.append(acc_test_1)
+                    loss_test.append(loss_test_1)
+                    cnn.train()
+
         print('Training complete!')
         torch.save(cnn.state_dict(), MODEL_PATH)
         print('Model save to:', MODEL_PATH)
+        # plots
+        plots_for_part2(acc_train, acc_test, loss_train, loss_test, eval_freq)
 
     # test
-    MODEL_PATH = './cifar_cnn_20240422_030956.pth'
-    cnn.load_state_dict(torch.load(MODEL_PATH))
-
-    # rate of correct
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for data in loader_test:
-            images, labels = data
-            outputs = cnn(images)
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-    print(f'Accuracy of the network on the 10000 test images: {100 * correct // total} %')
+    else:
+        MODEL_PATH = './cifar_cnn_demo.pth'
+        cnn.load_state_dict(torch.load(MODEL_PATH))
+    test(print_result=True)
 
     # rate of correct by classes
     correct_pred = {classname: 0 for classname in classes}
@@ -117,11 +162,12 @@ def main():
                         help='Frequency of evaluation on the test set')
     parser.add_argument('--data_dir', type=str, default=DATA_DIR_DEFAULT,
                         help='Directory for storing input data')
-    parser.add_argument('--pure_test', type=bool, default=True,
+    parser.add_argument('--pure_test', type=str, default='False',
                         help='[True or False] ---> [Test or Train&Test]')
     flags, unparsed = parser.parse_known_args()
 
-    train(flags.learning_rate, flags.max_steps, flags.batch_size, flags.eval_freq, flags.data_dir, flags.pure_test)
+    pure_test = str(flags.pure_test).lower() == 'true'
+    train(flags.learning_rate, flags.max_steps, flags.batch_size, flags.eval_freq, flags.data_dir, pure_test)
 
 
 if __name__ == '__main__':

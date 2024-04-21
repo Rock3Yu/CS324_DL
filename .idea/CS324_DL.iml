@@ -5,6 +5,7 @@
       <excludeFolder url="file://$MODULE_DIR$/ref_1" />
       <excludeFolder url="file://$MODULE_DIR$/ref_2" />
       <excludeFolder url="file://$MODULE_DIR$/ref_3" />
+      <excludeFolder url="file://$MODULE_DIR$/ref_4" />
     </content>
     <orderEntry type="jdk" jdkName="cs324" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
