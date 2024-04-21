@@ -33,7 +33,7 @@ def counter(predictions, targets):
 
 def train(lr: int, max_steps: int, batch_size: int, eval_freq: int, data_dir: str, pure_test: bool):
     print('mini-batch training, with batch =', batch_size)
-    MODEL_PATH = './cifar_cnn_' + (datetime.now() + timedelta(hours=8)).strftime('%Y%m%d_%H%M%S') + '.pth'
+    MODEL_PATH = './cifar_cnn_' + (datetime.now() + timedelta(hours=0)).strftime('%Y%m%d_%H%M%S') + '.pth'
 
     transform = transforms.Compose(
         [transforms.ToTensor(),
