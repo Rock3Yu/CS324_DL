@@ -74,7 +74,6 @@ def main(config):
 
 
 if __name__ == "__main__":
-
     # Parse training configuration
     parser = argparse.ArgumentParser()
 
