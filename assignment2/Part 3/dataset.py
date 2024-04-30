@@ -26,11 +26,9 @@ class PalindromeDataset(data.Dataset):
         if self.total_len > max_num:
             print("Warning: total_len is larger than the maximum possible length. ")
             print("Setting total_len to the maximum possible length. ")
-            print(
-                "Warning: access length of dataset by len(dataset) to get the actual length. ")
+            print("Warning: access length of dataset by len(dataset) to get the actual length. ")
             self.total_len = 10 ** self.half_length
-        self.data = np.random.default_rng().choice(
-            max_num, self.total_len, replace=False)
+        self.data = np.random.default_rng().choice(max_num, self.total_len, replace=False)
         self.mapping = np.eye(10) if one_hot else np.arange(10).reshape(10, 1)
 
     def __len__(self):
