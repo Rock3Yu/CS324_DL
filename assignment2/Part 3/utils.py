@@ -37,33 +37,35 @@ def accuracy(output, target):
     return acc
 
 
-def plots(train_loss, train_acc, val_loss, val_acc, interval=1):
-    _plot_loss(train_loss, val_loss, interval)
-    _plot_acc(train_acc, val_acc, interval)
+def plots(train_loss, train_acc, eval_loss, eval_acc, interval=1):
+    _plot_loss(train_loss, eval_loss, interval)
+    _plot_acc(train_acc, eval_acc, interval)
 
 
-def _plot_acc(acc_train, acc_test, interval):
+def _plot_acc(acc_train, acc_eval, interval):
+    len_rate = len(acc_eval) / len(acc_train)
     x = [i * interval for i in range(len(acc_train))]
-    x_test = [i * interval * 4 for i in range(len(acc_test))]
+    x_eval = [i * interval * len_rate for i in range(len(acc_eval))]
     plt.figure(figsize=(8, 6))
     plt.plot(x, acc_train, label='Train Accuracy', color='blue')
-    plt.plot(x_test, acc_test, label='Test Accuracy', color='red')
-    plt.title('Training and Testing Accuracy')
-    plt.xlabel('# Training Images (or epoches)')
+    plt.plot(x_eval, acc_eval, label='Evaluation Accuracy', color='red')
+    plt.title('Train and Evaluation Accuracy')
+    plt.xlabel('# Step')
     plt.ylabel('Accuracy')
     plt.legend()
     plt.grid(True)
     plt.show()
 
 
-def _plot_loss(loss_train, loss_test, interval):
+def _plot_loss(loss_train, loss_eval, interval):
+    len_rate = len(loss_train) / len(loss_eval)
     x = [i * interval for i in range(len(loss_train))]
-    x_test = [i * interval * 4 for i in range(len(loss_test))]
+    x_eval = [i * interval * len_rate for i in range(len(loss_eval))]
     plt.figure(figsize=(8, 6))
     plt.plot(x, loss_train, label='Train Loss', color='blue')
-    plt.plot(x_test, loss_test, label='Test Loss', color='red')
-    plt.title('Training and Testing Loss')
-    plt.xlabel('# Training Images (or epoches)')
+    plt.plot(x_eval, loss_eval, label='Evaluation Loss', color='red')
+    plt.title('Training and Evaluation Loss')
+    plt.xlabel('# Step')
     plt.ylabel('Loss')
     plt.legend()
     plt.grid(True)
