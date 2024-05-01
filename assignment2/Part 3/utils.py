@@ -43,7 +43,7 @@ def plots(train_loss, train_acc, eval_loss, eval_acc, interval=1):
 
 
 def _plot_acc(acc_train, acc_eval, interval):
-    len_rate = len(acc_eval) / len(acc_train)
+    len_rate = len(acc_train) / len(acc_eval)
     x = [i * interval for i in range(len(acc_train))]
     x_eval = [i * interval * len_rate for i in range(len(acc_eval))]
     plt.figure(figsize=(8, 6))
