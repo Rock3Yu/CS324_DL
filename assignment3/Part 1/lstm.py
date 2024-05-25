@@ -37,7 +37,6 @@ class LSTM(nn.Module):
         batch_size = x.size(0)
         hidden = torch.zeros(batch_size, self.hidden_dim)
         cell = torch.zeros(batch_size, self.hidden_dim)
-
         for i in range(self.input_length):
             x_t = x[:, i]
             # Input gate

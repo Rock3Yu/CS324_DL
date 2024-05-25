@@ -96,7 +96,7 @@ def train(dataloader, discriminator, generator, optimizer_gen, optimizer_dis):
             batches_done = epoch * len(dataloader) + i
             if batches_done % args.save_interval == 0:
                 gen_imgs = imgs_fake.unsqueeze(1)[:25]
-                path = f'images/{batches_done}.png'
+                path = f'task2/{batches_done}.png'
                 save_image(gen_imgs, path,
                            nrow=5, normalize=True, value_range=(-1, 1))
                 print(f'./{path}', end=' ')
@@ -107,7 +107,7 @@ def train(dataloader, discriminator, generator, optimizer_gen, optimizer_dis):
 
 
 def main():
-    os.makedirs('./images', exist_ok=True)
+    os.makedirs('./task2', exist_ok=True)
 
     dataloader = torch.utils.data.DataLoader(
         datasets.MNIST('./data/mnist', train=True, download=True,

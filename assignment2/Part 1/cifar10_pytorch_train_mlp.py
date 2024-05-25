@@ -24,14 +24,14 @@ def counter(predictions, targets):
     return torch.sum(targets == predictions)
 
 
-# def show_img(images, labels, classes):
+# def show_img(task2, labels, classes):
 #     def imshow(img):
 #         img = img / 2 + 0.5
 #         npimg = img.numpy()
 #         plt.imshow(np.transpose(npimg, (1, 2, 0)))
 #         plt.show()
 #
-#     # imshow(torchvision.utils.make_grid(images))
+#     # imshow(torchvision.utils.make_grid(task2))
 #     print(' '.join(f'{classes[labels[j]]:5s}' for j in range(BATCH_SIZE_DEFAULT)))
 
 
@@ -54,10 +54,10 @@ def train(dnn_hidden_units: str, learning_rate: float, pure_test: bool):
     classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
     # dataiter = iter(loader_train)
-    # images, labels = next(dataiter)
-    # show_img(images, labels, classes)
+    # task2, labels = next(dataiter)
+    # show_img(task2, labels, classes)
 
-    # print(images[0].shape)  # torch.Size([3, 32, 32])
+    # print(task2[0].shape)  # torch.Size([3, 32, 32])
     hidden_layers = [int(i) for i in dnn_hidden_units.split(',')]
     mlp = MLP(3 * 32 * 32, hidden_layers, 10)
     loss_fn = mlp.loss_fn
@@ -88,10 +88,10 @@ def train(dnn_hidden_units: str, learning_rate: float, pure_test: bool):
     # test
     mlp.load_state_dict(torch.load(MODEL_PATH))
     # dataiter = iter(loader_test)
-    # images, labels = next(dataiter)
-    # images = images.view(images.size(0), -1)
-    # show_img(images, labels, classes)
-    # outputs = mlp(images)
+    # task2, labels = next(dataiter)
+    # task2 = task2.view(task2.size(0), -1)
+    # show_img(task2, labels, classes)
+    # outputs = mlp(task2)
     # _, predicted = torch.max(outputs, 1)
     # print('Predicted: ', ' '.join(f'{classes[predicted[j]]:5s}' for j in range(BATCH_SIZE_DEFAULT)))
 
